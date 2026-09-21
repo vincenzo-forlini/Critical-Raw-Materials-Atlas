@@ -23,29 +23,29 @@
     <div class="header__actions">
       <span class="data-banner" title="Every record carries a source link and a confidence flag. Check before citing.">Seed dataset — verify before citing</span>
       <button class="btn btn--sm btn--accent" id="open-periodic">Explore the CRMs</button>
-      <button class="btn btn--sm" id="reset-all">Reset map</button>
       <a class="btn btn--sm" href="about.html">About</a>
     </div>
   </header>
 
+  <div class="fbar" id="fbar" role="toolbar" aria-label="Filters">
+    <div class="search">
+      <input type="search" id="search" placeholder="Search site, company or city…" aria-label="Search sites, companies and cities">
+      <button class="search__clear" id="search-clear" hidden aria-label="Clear search">&times;</button>
+    </div>
+    <div class="fbar__sep"></div>
+    <div class="fbar__pills" id="filter-pills"></div>
+    <div class="fbar__spacer"></div>
+    <button class="btn btn--sm" id="reset-all">Reset</button>
+  </div>
+
+  <div class="fpops" id="filter-pops" hidden></div>
+
   <div class="main" id="main">
 
-    <aside class="sidebar" id="sidebar" aria-label="Filters and results">
-      <div class="segmented" role="tablist">
-        <button role="tab" id="tab-filters" aria-selected="true" aria-controls="panel-filters">Filters</button>
-        <button role="tab" id="tab-results" aria-selected="false" aria-controls="panel-results">
-          Results <span class="pill" id="result-count">0</span>
-        </button>
-      </div>
-
-      <div class="search">
-        <input type="search" id="search" placeholder="Search site, company or city…" aria-label="Search sites, companies and cities">
-        <button class="search__clear" id="search-clear" hidden aria-label="Clear search">&times;</button>
-      </div>
+    <aside class="sidebar" id="sidebar" aria-label="Results">
 
       <div class="panel-scroll">
-        <div id="panel-filters" role="tabpanel" aria-labelledby="tab-filters"></div>
-        <div id="panel-results" role="tabpanel" aria-labelledby="tab-results" hidden></div>
+        <div id="panel-results"></div>
       </div>
     </aside>
 

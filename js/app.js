@@ -13,10 +13,11 @@ import {
 } from './data.js';
 import {
   initMap, renderBasemap, renderCities, renderMarkers, renderLegend, tintCountries, setSelected,
+  setFitTarget,
   flyToCity, resetView, invalidate, openPopupAt, closePopup,
 } from './map.js';
 import { STAGES } from './icons.js';
-import { renderFilters, toggleGroup, resetGroups } from './filters.js';
+import { renderFilterBar, toggleFacet, closeFacet, anyFacetOpen } from './filters.js';
 import { renderResults } from './results.js';
 import { cityPanel, companyPanel, elementPanel } from './panels.js';
 import { renderPeriodicTable } from './periodic.js';
@@ -87,6 +88,12 @@ async function boot() {
 
   initMap();
   renderBasemap(geo);
+  // Frame the view on the cities that hold sites, rather than on the basemap's
+  // clip box, most of which is empty sea.
+  setFitTarget([...new Set(model.facilities.map((f) => f.cityKey))].map((key) => {
+    const c = model.cityByKey.get(key);
+    return [c.lat, c.lon];
+  }));
   renderCities(model.cities);
   renderLegend($('legend'), STAGES);
 
@@ -143,20 +150,14 @@ function render(state = S.state) {
   renderLegend($('legend'), [...state.stages]);
 
   const counts = facetCounts(model, state);
-  renderFilters($('panel-filters'), model, state, counts);
+  renderFilterBar($('filter-pills'), $('filter-pops'), model, state, counts);
   renderResults($('panel-results'), model, state, facilities);
 
-  $('result-count').textContent = facilities.length;
   $('map-note').textContent = `${facilities.length} of ${model.stats.facilities} sites`;
 
   const searchInput = $('search');
   if (searchInput.value !== state.query) searchInput.value = state.query;
   $('search-clear').hidden = !state.query;
-
-  $('tab-filters').setAttribute('aria-selected', String(currentTab === 'filters'));
-  $('tab-results').setAttribute('aria-selected', String(currentTab === 'results'));
-  $('panel-filters').hidden = currentTab !== 'filters';
-  $('panel-results').hidden = currentTab !== 'results';
 
   renderDetail(state);
 }
@@ -235,12 +236,7 @@ function popupHtml(group) {
 
 /* --------------------------------------------------------------- chrome UI */
 
-let currentTab = 'filters';
-
 function wireChrome() {
-  $('tab-filters').addEventListener('click', () => { currentTab = 'filters'; render(S.state); });
-  $('tab-results').addEventListener('click', () => { currentTab = 'results'; render(S.state); });
-
   let debounce;
   $('search').addEventListener('input', (e) => {
     clearTimeout(debounce);
@@ -264,8 +260,27 @@ function wireChrome() {
     if (e.target === $('periodic')) closePeriodic();
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !$('periodic').hidden) closePeriodic();
+    if (e.key !== 'Escape') return;
+    if (!$('periodic').hidden) { closePeriodic(); return; }
+    // A dropped facet list takes Escape before the detail panel does, since it
+    // is the thing most recently opened.
+    if (anyFacetOpen()) { closeFacet(); render(S.state); }
   });
+
+  // Clicking away from an open facet list closes it. The pill itself and the
+  // list's own contents are excluded, or the click that opened it would also
+  // shut it.
+  document.addEventListener('pointerdown', (e) => {
+    if (!anyFacetOpen()) return;
+    if (e.target.closest('#filter-pops') || e.target.closest('.fpill')) return;
+    closeFacet();
+    render(S.state);
+  });
+
+  // The popovers are placed by hand under their pill, so they have to be put
+  // back when anything moves them.
+  window.addEventListener('resize', () => { if (anyFacetOpen()) render(S.state); });
+  $('fbar').addEventListener('scroll', () => { if (anyFacetOpen()) render(S.state); });
 
   $('reset-all').addEventListener('click', resetEverything);
   $('toggle-sidebar').addEventListener('click', () => {
@@ -273,11 +288,11 @@ function wireChrome() {
   });
   $('errors-close').addEventListener('click', () => { $('errors').hidden = true; });
 
-  // Filter checkboxes.
-  $('panel-filters').addEventListener('change', (e) => {
+  // Filter checkboxes, now inside the facet popovers.
+  $('filter-pops').addEventListener('change', (e) => {
     const input = e.target.closest('input[type=checkbox]');
     if (!input) return;
-    const facet = input.closest('.fgroup')?.dataset.facet;
+    const facet = input.closest('[data-facet]')?.dataset.facet;
     if (facet) S.toggle(facet, input.value);
   });
 
@@ -291,8 +306,8 @@ function onDelegatedClick(e) {
   const { act, id } = el.dataset;
 
   switch (act) {
-    case 'toggle-group':
-      toggleGroup(id);
+    case 'facet':
+      toggleFacet(id);
       render(S.state);
       break;
 
@@ -324,7 +339,9 @@ function onDelegatedClick(e) {
       const ids = String(id).split(',').filter(Boolean);
       S.setMany('elements', ids);
       // The factsheet takes the right-hand column, so give the map the left one
-      // back. The filter panel has just been used and is not needed to read this.
+      // back. The filters stay put in the bar across the top either way, which
+      // is the point of having them there.
+      closeFacet();
       setSidebarOpen(false);
       S.setDetail({ kind: 'element', id });
       break;
@@ -356,9 +373,8 @@ function onDelegatedClick(e) {
 function resetEverything() {
   closePeriodic();
   closePopup();
-  currentTab = 'filters';
   productionStage = null;
-  resetGroups();
+  closeFacet();
   applyResponsiveSidebar();
   // selectEverything also clears the search, the open panel and the selection,
   // so this ends in the same state as a page load without the reload.

@@ -1,9 +1,24 @@
 /**
- * The filter sidebar.
+ * The filter bar.
+ *
+ * Every facet is a pill across the top of the page; clicking one drops its
+ * option list beneath it. The filters used to be a column of six stacked groups
+ * in the sidebar, which had two problems. The column ran to about 1500px of
+ * content in a 600px window, so most of it was always out of sight; and opening
+ * a material factsheet collapsed the whole sidebar, which took the filters away
+ * at the exact moment you had just used them. Across the top the facets cannot
+ * be collapsed by anything else on the page, and the sidebar is free to show
+ * results.
  *
  * Counts beside each option are computed with that facet's own filter removed
  * (see facetCounts in data.js), so selecting "Lithium" does not make every other
  * material read zero — the counts stay useful for deciding what to add.
+ *
+ * The option rows are built once and then patched in place. Reassigning
+ * innerHTML on every render used to throw away every checkbox on each click,
+ * which dropped keyboard focus to <body>: after ticking one country you were
+ * sixty tab stops from the next one. Patching leaves the node you are
+ * interacting with alone.
  */
 
 import { STAGES, STAGE_LABELS, STAGE_DESCRIPTIONS, stageIcon } from './icons.js';
@@ -22,190 +37,130 @@ const CRMA_LABELS = {
   'not-listed': 'Not on the list',
 };
 
-const OPEN_DEFAULTS = [
-  ['elements', true],
-  ['stages', true],
-  ['crma', true],
-  ['maturities', true],
-  ['countries', false],
-  ['statuses', false],
+const statusLabel = (s) => s.replace(/-/g, ' ').replace(/^./, (m) => m.toUpperCase());
+
+/**
+ * The pills, left to right. `scroll` caps the option list's height; the two long
+ * lists (34 materials, 23 countries) get it, the short ones do not need it.
+ */
+const FACETS = [
+  { id: 'elements', label: 'Material', scroll: true },
+  { id: 'stages', label: 'Stage' },
+  { id: 'countries', label: 'Country', scroll: true },
+  { id: 'statuses', label: 'Status' },
+  { id: 'maturities', label: 'Company' },
+  { id: 'crma', label: 'EU projects' },
 ];
 
-const OPEN = new Map([
-  ['elements', true],
-  ['stages', true],
-  ['maturities', true],
-  ['crma', true],
-  ['countries', false],
-  ['statuses', false],
-]);
+/** At most one pill is open at a time. Null means none. */
+let openFacetId = null;
 
-function group({ facet, title, selectedCount, total, body, scroll }) {
-  const all = selectedCount === total;
-  const none = selectedCount === 0;
-  return `<section class="fgroup" data-facet="${facet}" data-open="${OPEN.get(facet) !== false}">
-    <button class="fgroup__head" data-act="toggle-group" data-id="${facet}">
-      <svg class="fgroup__chev" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+/* ----------------------------------------------------------------- options */
+
+function optionsFor(facet, model) {
+  switch (facet) {
+    case 'elements':
+      return [...model.elements]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((e) => ({ value: e.id, label: e.name, star: e.strategic, group: e.strategic }));
+    case 'stages':
+      return STAGES.map((s) => ({ value: s, label: STAGE_LABELS[s], stage: s }));
+    case 'countries':
+      return [...new Set(model.facilities.map((f) => f.country))]
+        .sort()
+        .map((c) => ({ value: c, label: c }));
+    case 'statuses':
+      return STATUS_VALUES.map((s) => ({ value: s, label: statusLabel(s) }));
+    case 'maturities':
+      return MATURITY_VALUES.map((m) => ({ value: m, label: MATURITY_LABELS[m] }));
+    case 'crma':
+      return CRMA_VALUES.map((v) => ({ value: v, label: CRMA_LABELS[v], star: v === 'strategic' }));
+    default:
+      return [];
+  }
+}
+
+/* -------------------------------------------------------------------- build */
+
+/** A stage row carries its own pictogram and colour, so it is not a checkRow. */
+function stageRow(o, counts) {
+  const n = counts.get(o.value) || 0;
+  return `<label class="check" data-empty="${n === 0}" title="${esc(STAGE_DESCRIPTIONS[o.stage])}"
+                 style="--stage-c: var(--stage-${o.stage})">
+    <input type="checkbox" value="${esc(o.value)}">
+    <span class="check__box">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6"
+           stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 5"/></svg>
+    </span>
+    <span class="check__stage">${stageIcon(o.stage, { size: 13 })}</span>
+    <span class="check__label">${esc(o.label)}</span>
+    <span class="check__n">${n}</span>
+  </label>`;
+}
+
+function popBody(facet, model, counts) {
+  const options = optionsFor(facet, model);
+
+  if (facet === 'stages') return options.map((o) => stageRow(o, counts)).join('');
+
+  const row = (o) =>
+    checkRow({ id: o.value, label: o.label, checked: false, count: counts.get(o.value) || 0, star: o.star });
+
+  // Materials are the one list worth splitting: the Act's strategic subset is
+  // what most people arrive looking for.
+  if (facet === 'elements') {
+    const strategic = options.filter((o) => o.group);
+    const other = options.filter((o) => !o.group);
+    return `<div class="fgroup__sub">Strategic raw materials</div>${strategic.map(row).join('')}
+            <div class="fgroup__sub">Other critical raw materials</div>${other.map(row).join('')}`;
+  }
+  return options.map(row).join('');
+}
+
+function buildBar(pills, pops, model, counts) {
+  pills.innerHTML = FACETS.map(
+    (f) => `<button class="fpill" data-act="facet" data-id="${f.id}" aria-expanded="false"
+                    aria-haspopup="true" aria-controls="pop-${f.id}">
+      <span class="fpill__k">${esc(f.label)}</span>
+      <span class="fpill__v" data-role="value">all</span>
+      <svg class="fpill__chev" viewBox="0 0 16 16" fill="none" stroke="currentColor"
            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
-      <span class="fgroup__title">${esc(title)}</span>
-      <span class="fgroup__count">${all ? 'all' : `${selectedCount} of ${total}`}</span>
-    </button>
-    <div class="fgroup__body">
+    </button>`
+  ).join('');
+
+  pops.innerHTML = FACETS.map(
+    (f) => `<section class="fpop" id="pop-${f.id}" data-facet="${f.id}" role="group"
+                     aria-label="${esc(f.label)}" hidden>
       <div class="fgroup__actions">
-        <button class="btn btn--sm" data-act="select-all" data-id="${facet}" ${all ? 'disabled' : ''}>Select all</button>
-        <button class="btn btn--sm" data-act="deselect-all" data-id="${facet}" ${none ? 'disabled' : ''}>Deselect all</button>
+        <button class="btn btn--sm" data-act="select-all" data-id="${f.id}">Select all</button>
+        <button class="btn btn--sm" data-act="deselect-all" data-id="${f.id}">Deselect all</button>
       </div>
-      <div class="fgroup__list${scroll ? ' fgroup__list--scroll' : ''}">${body}</div>
-    </div>
-  </section>`;
+      <div class="fpop__list${f.scroll ? ' fpop__list--scroll' : ''}">${popBody(f.id, model, counts[f.id])}</div>
+    </section>`
+  ).join('');
 }
 
-/**
- * The option rows are built once and then patched in place.
- *
- * This used to reassign container.innerHTML on every render. That threw away
- * every checkbox on each click, which dropped keyboard focus to <body> — after
- * ticking one country you had to tab past sixty elements to reach the next one.
- * Rebuilding also lost list scroll position, which needed its own save/restore
- * pass to hide. Patching removes both problems at the source: the nodes the
- * reader is interacting with are never replaced.
- *
- * The rows themselves never change. Materials, stages and countries all come
- * from the model, which is fixed after boot, so only the counts, the ticks and
- * the open/closed state need updating.
- */
-function buildFilters(container, model, state, counts) {
-  const materials = [...model.elements].sort((a, b) => a.name.localeCompare(b.name));
-  const strategic = materials.filter((e) => e.strategic);
-  const other = materials.filter((e) => !e.strategic);
+/* -------------------------------------------------------------------- patch */
 
-  const materialRow = (e) =>
-    checkRow({
-      id: e.id,
-      label: e.name,
-      checked: state.elements.has(e.id),
-      count: counts.elements.get(e.id) || 0,
-      star: e.strategic,
-    });
-
-  const countries = [...new Set(model.facilities.map((f) => f.country))].sort();
-
-  container.innerHTML = `
-    ${group({
-      facet: 'elements',
-      title: 'Material',
-      selectedCount: state.elements.size,
-      total: materials.length,
-      scroll: true,
-      body: `
-        <div class="fgroup__sub">Strategic raw materials</div>
-        ${strategic.map(materialRow).join('')}
-        <div class="fgroup__sub">Other critical raw materials</div>
-        ${other.map(materialRow).join('')}`,
-    })}
-
-    ${group({
-      facet: 'stages',
-      title: 'Stage of the chain',
-      selectedCount: state.stages.size,
-      total: STAGES.length,
-      body: STAGES.map((s) =>
-        `<label class="check" data-empty="${(counts.stages.get(s) || 0) === 0}"
-                title="${esc(STAGE_DESCRIPTIONS[s])}" style="--stage-c: var(--stage-${s})">
-          <input type="checkbox" value="${s}" ${state.stages.has(s) ? 'checked' : ''}>
-          <span class="check__box">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6"
-                 stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3.2L13 5"/></svg>
-          </span>
-          <span class="check__stage">${stageIcon(s, { size: 13 })}</span>
-          <span class="check__label">${esc(STAGE_LABELS[s])}</span>
-          <span class="check__n">${counts.stages.get(s) || 0}</span>
-        </label>`
-      ).join(''),
-    })}
-
-    ${group({
-      facet: 'crma',
-      title: 'EU Strategic Projects',
-      selectedCount: state.crma.size,
-      total: CRMA_VALUES.length,
-      body: CRMA_VALUES.map((v) =>
-        checkRow({
-          id: v,
-          label: CRMA_LABELS[v],
-          checked: state.crma.has(v),
-          count: counts.crma.get(v) || 0,
-          star: v === 'strategic',
-        })
-      ).join(''),
-    })}
-
-    ${group({
-      facet: 'maturities',
-      title: 'Company type',
-      selectedCount: state.maturities.size,
-      total: MATURITY_VALUES.length,
-      body: MATURITY_VALUES.map((m) =>
-        checkRow({
-          id: m,
-          label: MATURITY_LABELS[m],
-          checked: state.maturities.has(m),
-          count: counts.maturities.get(m) || 0,
-        })
-      ).join(''),
-    })}
-
-    ${group({
-      facet: 'countries',
-      title: 'Country',
-      selectedCount: state.countries.size,
-      total: countries.length,
-      scroll: true,
-      body: countries
-        .map((c) =>
-          checkRow({
-            id: c,
-            label: c,
-            checked: state.countries.has(c),
-            count: counts.countries.get(c) || 0,
-          })
-        )
-        .join(''),
-    })}
-
-    ${group({
-      facet: 'statuses',
-      title: 'Status',
-      selectedCount: state.statuses.size,
-      total: STATUS_VALUES.length,
-      body: STATUS_VALUES.map((s) =>
-        checkRow({
-          id: s,
-          label: s.replace(/-/g, ' ').replace(/^./, (m) => m.toUpperCase()),
-          checked: state.statuses.has(s),
-          count: counts.statuses.get(s) || 0,
-        })
-      ).join(''),
-    })}
-  `;
-
+/** What the pill reads when it is not showing "all". */
+function pillValue(facet, state, model, total) {
+  const selected = state[facet];
+  if (selected.size === total) return 'all';
+  if (selected.size === 0) return 'none';
+  if (selected.size === 1) {
+    const only = [...selected][0];
+    const found = optionsFor(facet, model).find((o) => o.value === only);
+    return found ? found.label : only;
+  }
+  return `${selected.size} selected`;
 }
 
-/**
- * Bring the already-built rows in line with the current state. Touches an
- * attribute or a text node only when the value actually differs, so a render
- * that changes nothing costs nothing and never disturbs the DOM under the
- * reader's cursor.
- */
-function patchFilters(container, state, counts) {
-  for (const section of container.querySelectorAll('[data-facet]')) {
+function patchBar(pills, pops, model, state, counts) {
+  for (const section of pops.querySelectorAll('[data-facet]')) {
     const facet = section.dataset.facet;
     const selected = state[facet];
     const facetCounts = counts[facet];
     if (!selected || !facetCounts) continue;
-
-    const open = String(OPEN.get(facet) !== false);
-    if (section.dataset.open !== open) section.dataset.open = open;
 
     let total = 0;
     for (const input of section.querySelectorAll('input[type=checkbox]')) {
@@ -222,29 +177,87 @@ function patchFilters(container, state, counts) {
       if (nEl && nEl.textContent !== String(n)) nEl.textContent = String(n);
     }
 
-    const head = section.querySelector('.fgroup__count');
-    if (head) {
-      const label = selected.size === total ? 'all' : `${selected.size} of ${total}`;
-      if (head.textContent !== label) head.textContent = label;
-    }
     const selectAll = section.querySelector('[data-act="select-all"]');
     const deselectAll = section.querySelector('[data-act="deselect-all"]');
     if (selectAll) selectAll.disabled = selected.size === total;
     if (deselectAll) deselectAll.disabled = selected.size === 0;
+
+    const pill = pills.querySelector(`.fpill[data-id="${facet}"]`);
+    if (!pill) continue;
+    const label = pillValue(facet, state, model, total);
+    const valueEl = pill.querySelector('[data-role="value"]');
+    if (valueEl && valueEl.textContent !== label) valueEl.textContent = label;
+    // A pill that is narrowing the map should look like it, so the state of the
+    // filters is readable without opening anything.
+    const narrowed = String(selected.size !== total);
+    if (pill.dataset.on !== narrowed) pill.dataset.on = narrowed;
+    const expanded = String(openFacetId === facet);
+    if (pill.getAttribute('aria-expanded') !== expanded) pill.setAttribute('aria-expanded', expanded);
+    section.hidden = openFacetId !== facet;
+  }
+  if (openFacetId) positionPop(pills, pops);
+}
+
+/* ------------------------------------------------------------- positioning */
+
+/**
+ * The popovers live in a fixed layer rather than inside the bar, because the
+ * bar scrolls sideways on a narrow window and would clip them. That means the
+ * open one has to be placed by hand under its pill, and flipped to hang from
+ * the right edge when it would otherwise run off the side.
+ */
+function positionPop(pills, pops) {
+  const pill = pills.querySelector(`.fpill[data-id="${openFacetId}"]`);
+  const pop = pops.querySelector(`#pop-${openFacetId}`);
+  if (!pill || !pop) return;
+
+  const r = pill.getBoundingClientRect();
+  const margin = 8;
+  pop.style.top = `${Math.round(r.bottom + 6)}px`;
+  // Measure first, then decide which edge to hang from.
+  pop.style.left = '0px';
+  pop.style.right = 'auto';
+  const width = pop.offsetWidth;
+  let left = r.left;
+  if (left + width > window.innerWidth - margin) left = window.innerWidth - margin - width;
+  if (left < margin) left = margin;
+  pop.style.left = `${Math.round(left)}px`;
+
+  // Never taller than the room below the pill. The cap goes on the list rather
+  // than the popover, so the Select all / Deselect all row above it stays put
+  // and only one scrollbar appears.
+  const list = pop.querySelector('.fpop__list');
+  if (list) {
+    const room = Math.round(window.innerHeight - r.bottom - 34);
+    // The long lists get a comfortable cap on a tall window; the short ones are
+    // limited only by the room available.
+    const cap = list.classList.contains('fpop__list--scroll') ? 270 : room;
+    list.style.maxHeight = `${Math.max(120, Math.min(cap, room))}px`;
   }
 }
 
-export function renderFilters(container, model, state, counts) {
-  // Guard on the DOM rather than a flag, so an externally cleared panel rebuilds.
-  if (!container.firstElementChild) buildFilters(container, model, state, counts);
-  patchFilters(container, state, counts);
+/* ------------------------------------------------------------------ exports */
+
+export function renderFilterBar(pills, pops, model, state, counts) {
+  // Guard on the DOM rather than a flag, so an externally cleared bar rebuilds.
+  if (!pills.firstElementChild) buildBar(pills, pops, model, counts);
+  pops.hidden = false;
+  patchBar(pills, pops, model, state, counts);
 }
 
-export function toggleGroup(facet) {
-  OPEN.set(facet, OPEN.get(facet) === false);
+/** Open a facet's popover, or close it if it is the one already open. */
+export function toggleFacet(facet) {
+  openFacetId = openFacetId === facet ? null : facet;
 }
 
-/** Back to the collapsed/expanded pattern the page opens with. */
-export function resetGroups() {
-  for (const [facet, open] of OPEN_DEFAULTS) OPEN.set(facet, open);
+export function closeFacet() {
+  openFacetId = null;
+}
+
+export function openFacetIs(facet) {
+  return openFacetId === facet;
+}
+
+export function anyFacetOpen() {
+  return openFacetId !== null;
 }
