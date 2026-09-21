@@ -61,30 +61,20 @@ function group({ facet, title, selectedCount, total, body, scroll }) {
 }
 
 /**
- * Capture where each scrollable list is scrolled to, so re-rendering the sidebar
- * does not throw the reader back to the top. Ticking "Sweden" near the bottom of
- * the country list otherwise scrolls away from what you just clicked.
+ * The option rows are built once and then patched in place.
+ *
+ * This used to reassign container.innerHTML on every render. That threw away
+ * every checkbox on each click, which dropped keyboard focus to <body> — after
+ * ticking one country you had to tab past sixty elements to reach the next one.
+ * Rebuilding also lost list scroll position, which needed its own save/restore
+ * pass to hide. Patching removes both problems at the source: the nodes the
+ * reader is interacting with are never replaced.
+ *
+ * The rows themselves never change. Materials, stages and countries all come
+ * from the model, which is fixed after boot, so only the counts, the ticks and
+ * the open/closed state need updating.
  */
-function captureScroll(container) {
-  const positions = new Map();
-  for (const el of container.querySelectorAll('[data-facet] .fgroup__list')) {
-    positions.set(el.closest('[data-facet]').dataset.facet, el.scrollTop);
-  }
-  const outer = container.closest('.panel-scroll');
-  return { positions, outer: outer ? outer.scrollTop : 0 };
-}
-
-function restoreScroll(container, saved) {
-  for (const el of container.querySelectorAll('[data-facet] .fgroup__list')) {
-    const top = saved.positions.get(el.closest('[data-facet]').dataset.facet);
-    if (top) el.scrollTop = top;
-  }
-  const outer = container.closest('.panel-scroll');
-  if (outer && saved.outer) outer.scrollTop = saved.outer;
-}
-
-export function renderFilters(container, model, state, counts) {
-  const saved = captureScroll(container);
+function buildFilters(container, model, state, counts) {
   const materials = [...model.elements].sort((a, b) => a.name.localeCompare(b.name));
   const strategic = materials.filter((e) => e.strategic);
   const other = materials.filter((e) => !e.strategic);
@@ -199,7 +189,55 @@ export function renderFilters(container, model, state, counts) {
     })}
   `;
 
-  restoreScroll(container, saved);
+}
+
+/**
+ * Bring the already-built rows in line with the current state. Touches an
+ * attribute or a text node only when the value actually differs, so a render
+ * that changes nothing costs nothing and never disturbs the DOM under the
+ * reader's cursor.
+ */
+function patchFilters(container, state, counts) {
+  for (const section of container.querySelectorAll('[data-facet]')) {
+    const facet = section.dataset.facet;
+    const selected = state[facet];
+    const facetCounts = counts[facet];
+    if (!selected || !facetCounts) continue;
+
+    const open = String(OPEN.get(facet) !== false);
+    if (section.dataset.open !== open) section.dataset.open = open;
+
+    let total = 0;
+    for (const input of section.querySelectorAll('input[type=checkbox]')) {
+      total += 1;
+      const on = selected.has(input.value);
+      if (input.checked !== on) input.checked = on;
+
+      const row = input.closest('.check');
+      if (!row) continue;
+      const n = facetCounts.get(input.value) || 0;
+      const empty = String(n === 0);
+      if (row.dataset.empty !== empty) row.dataset.empty = empty;
+      const nEl = row.querySelector('.check__n');
+      if (nEl && nEl.textContent !== String(n)) nEl.textContent = String(n);
+    }
+
+    const head = section.querySelector('.fgroup__count');
+    if (head) {
+      const label = selected.size === total ? 'all' : `${selected.size} of ${total}`;
+      if (head.textContent !== label) head.textContent = label;
+    }
+    const selectAll = section.querySelector('[data-act="select-all"]');
+    const deselectAll = section.querySelector('[data-act="deselect-all"]');
+    if (selectAll) selectAll.disabled = selected.size === total;
+    if (deselectAll) deselectAll.disabled = selected.size === 0;
+  }
+}
+
+export function renderFilters(container, model, state, counts) {
+  // Guard on the DOM rather than a flag, so an externally cleared panel rebuilds.
+  if (!container.firstElementChild) buildFilters(container, model, state, counts);
+  patchFilters(container, state, counts);
 }
 
 export function toggleGroup(facet) {

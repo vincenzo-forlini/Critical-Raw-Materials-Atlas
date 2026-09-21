@@ -326,15 +326,26 @@ export function renderLegend(container, activeStages) {
   // An empty selection means none are active, not all of them. Falling back to
   // "all" here would leave the legend fully lit with an empty map beneath it.
   const active = new Set(activeStages || STAGES);
-  container.innerHTML = `
-    <div class="legend__title">Stage of the chain</div>
-    ${STAGES.map(
-      (s) => `
-      <div class="legend__row" style="--stage-c: var(--stage-${s})" data-off="${!active.has(s)}"
-           title="${STAGE_DESCRIPTIONS[s]}">
-        <span class="legend__dot">${stageIcon(s)}</span>
-        <span>${STAGE_LABELS[s]}</span>
-      </div>`
-    ).join('')}
-  `;
+
+  // Built once. Rewriting innerHTML on every render dismissed the row tooltip
+  // mid-hover, and the only thing that actually changes here is which rows are
+  // dimmed.
+  if (!container.firstElementChild) {
+    container.innerHTML = `
+      <div class="legend__title">Stage of the chain</div>
+      ${STAGES.map(
+        (s) => `
+        <div class="legend__row" data-stage="${s}" style="--stage-c: var(--stage-${s})"
+             title="${STAGE_DESCRIPTIONS[s]}">
+          <span class="legend__dot">${stageIcon(s)}</span>
+          <span>${STAGE_LABELS[s]}</span>
+        </div>`
+      ).join('')}
+    `;
+  }
+
+  for (const row of container.querySelectorAll('.legend__row')) {
+    const off = String(!active.has(row.dataset.stage));
+    if (row.dataset.off !== off) row.dataset.off = off;
+  }
 }
