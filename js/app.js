@@ -171,6 +171,10 @@ function renderDetail(state = S.state) {
   if (!state.detail) {
     main.classList.remove('detail-open');
     body.innerHTML = '';
+    // Closing the panel ends the trail: there is no panel to go back to.
+    trail.length = 0;
+    $('detail-back').hidden = true;
+    $('detail').removeAttribute('data-back');
     invalidate();
     return;
   }
@@ -193,13 +197,69 @@ function renderDetail(state = S.state) {
   }
 
   main.classList.add('detail-open');
+  // Back appears whenever there is a recorded view to return to. That includes
+  // going back to no panel at all: the view behind it still had a search and a
+  // set of filters worth restoring, which is the whole point.
+  const canGoBack = trail.length > 0;
+  $('detail-back').hidden = !canGoBack;
+  if (canGoBack) $('detail').setAttribute('data-back', 'true');
+  else $('detail').removeAttribute('data-back');
   body.scrollTop = 0;
   invalidate();
 }
 
 /* -------------------------------------------------------------- map events */
 
+/**
+ * Where the reader was before the panel they are looking at now.
+ *
+ * Opening a factsheet is not a neutral act: it rewrites the material filter and
+ * folds the results panel away, so closing it does not put you back where you
+ * were. Search for copper, open the copper factsheet from a result, close it,
+ * and the search you typed is gone along with it.
+ *
+ * So the whole view gets recorded, not just the panel: every facet, the search
+ * text, which results tab was showing, the selected marker and whether the
+ * results panel was open. Back walks the chain — factsheet to company to
+ * another factsheet and out again — and each step restores the view that
+ * produced it.
+ */
+const trail = [];
+
+const TRAIL_FACETS = ['elements', 'stages', 'countries', 'statuses', 'maturities', 'crma'];
+
+function pushTrail() {
+  const facets = {};
+  for (const key of TRAIL_FACETS) facets[key] = new Set(S.state[key]);
+  trail.push({
+    detail: S.state.detail,
+    facets,
+    query: S.state.query,
+    resultsTab: S.state.resultsTab,
+    selectedKey: S.state.selectedKey,
+    sidebarCollapsed: $('main').classList.contains('sidebar-collapsed'),
+  });
+  // A reader who has gone twenty panels deep does not need the twenty-first.
+  if (trail.length > 20) trail.shift();
+}
+
+function goBack() {
+  const prev = trail.pop();
+  if (!prev) return;
+  productionStage = null;
+  closeFacet();
+  closePopup();
+  // Every setter coalesces onto one render, so this is a single repaint.
+  for (const key of TRAIL_FACETS) S.setMany(key, [...prev.facets[key]]);
+  S.setQuery(prev.query);
+  S.setResultsTab(prev.resultsTab);
+  S.setSelectedKey(prev.selectedKey);
+  setSidebarOpen(!prev.sidebarCollapsed);
+  S.setDetail(prev.detail);
+}
+
 function onMarkerSelect(group) {
+  pushTrail();
   S.setSelectedKey(group.key);
   openPopupAt(group.key, popupHtml(group));
   S.setDetail({ kind: 'city', id: group.city.key, stage: group.stage });
@@ -248,6 +308,8 @@ function wireChrome() {
     S.setQuery('');
     $('search').focus();
   });
+
+  $('detail-back').addEventListener('click', goBack);
 
   $('detail-close').addEventListener('click', () => {
     S.setDetail(null);
@@ -312,6 +374,10 @@ function onDelegatedClick(e) {
       render(S.state);
       break;
 
+    case 'go-back':
+      goBack();
+      break;
+
     case 'results-tab':
       S.setResultsTab(id);
       break;
@@ -328,10 +394,12 @@ function onDelegatedClick(e) {
 
     case 'open-company':
       e.stopPropagation();
+      pushTrail();
       S.setDetail({ kind: 'company', id });
       break;
 
     case 'open-element': {
+      pushTrail();
       productionStage = null;
       closePeriodic(); // harmless when it is not open
       // Opening a factsheet also narrows the map to that material, so the panel
