@@ -294,12 +294,19 @@ button {
 .fpill[aria-expanded="true"] .fpill__chev { transform: rotate(180deg); }
 .fpill:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-/* The popovers live in a fixed layer, not inside the bar: the bar scrolls
-   sideways and would clip them. Each is placed under its pill by js/filters.js. */
-.fpops { position: fixed; inset: 0; pointer-events: none; z-index: 620; }
+/* The popovers sit outside the bar, which scrolls sideways and would clip them.
+   Each is placed under its pill by js/filters.js.
+
+   The holder is deliberately zero-size rather than a layer of its own. It used
+   to be `position: fixed; inset: 0` wrapping children that are themselves
+   fixed — a nested-fixed sandwich that bought nothing, since every popover is
+   positioned by hand anyway, and is a known way to get a browser to lay a box
+   out correctly and then fail to paint what is inside it. A dropdown that opens
+   empty with its border and background intact is exactly that symptom. */
+.fpops { position: absolute; top: 0; left: 0; width: 0; height: 0; }
 .fpop {
   position: fixed;
-  pointer-events: auto;
+  z-index: 620;
   width: 290px;
   box-sizing: border-box;
   padding: 11px;

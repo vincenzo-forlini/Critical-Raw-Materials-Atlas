@@ -239,8 +239,14 @@ function positionPop(pills, pops) {
 /* ------------------------------------------------------------------ exports */
 
 export function renderFilterBar(pills, pops, model, state, counts) {
-  // Guard on the DOM rather than a flag, so an externally cleared bar rebuilds.
-  if (!pills.firstElementChild) buildBar(pills, pops, model, counts);
+  // Guard on the DOM rather than a flag, so a cleared bar rebuilds itself.
+  // Both halves are checked: the pills and the popovers are written by the same
+  // call but live in different elements, and checking only the pills meant that
+  // if the popovers were ever emptied on their own, nothing would put them back
+  // — the dropdowns would open empty from then on, permanently.
+  if (!pills.firstElementChild || !pops.firstElementChild) {
+    buildBar(pills, pops, model, counts);
+  }
   pops.hidden = false;
   patchBar(pills, pops, model, state, counts);
 }
