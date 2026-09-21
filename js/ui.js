@@ -14,14 +14,49 @@ export function stageChip(stage) {
   </span>`;
 }
 
+/**
+ * Material chips. Each one opens that material's factsheet, which is the
+ * shortest path from "this plant handles tungsten" to what tungsten actually
+ * is and who controls it.
+ */
 export function elementChips(ids, elementById, { max = 0 } = {}) {
-  const names = ids.map((id) => elementById.get(id)?.name || id);
-  const shown = max > 0 ? names.slice(0, max) : names;
-  const rest = names.length - shown.length;
+  const shown = max > 0 ? ids.slice(0, max) : ids;
+  const rest = ids.length - shown.length;
   return (
-    shown.map((n) => `<span class="chip">${esc(n)}</span>`).join('') +
+    shown
+      .map((id) => {
+        const name = elementById.get(id)?.name || id;
+        return `<button type="button" class="chip chip--el" data-act="open-element"
+                 data-id="${esc(id)}" title="Open the ${esc(name)} factsheet">${esc(name)}</button>`;
+      })
+      .join('') +
+    // The overflow count is not a link: there is no one material behind it.
     (rest > 0 ? `<span class="chip faint">+${rest}</span>` : '')
   );
+}
+
+/**
+ * A result card.
+ *
+ * The whole card is one target for its own action, but the material chips and
+ * the operator name inside it are separate buttons — and a button cannot be
+ * nested inside a button. So the card's own target is an overlay sitting behind
+ * the content, and the content passes clicks through to it except where
+ * something inside wants them for itself (see .rcard in the stylesheet).
+ */
+export function rcard({ act, id, label, current, body }) {
+  const cur = current === undefined ? '' : ` aria-current="${current}"`;
+  return `<div class="rcard"${cur}>
+    <button type="button" class="rcard__hit" data-act="${esc(act)}" data-id="${esc(id)}"
+            aria-label="${esc(label)}"></button>
+    ${body}
+  </div>`;
+}
+
+/** An operator's name, as a real button rather than a span with a handler. */
+export function companyLink(company) {
+  return `<button type="button" class="link link--btn" data-act="open-company"
+           data-id="${esc(company.key)}">${esc(company.name)}</button>`;
 }
 
 export function statusChip(status) {

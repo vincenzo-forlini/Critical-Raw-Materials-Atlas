@@ -64,7 +64,10 @@
   </div>
 
   <aside class="detail" id="detail" aria-label="Details" aria-live="polite">
-    <button class="detail__close" id="detail-close" aria-label="Close the details panel">&times;</button>
+    <div class="detail__nav">
+      <button type="button" class="detail__back" id="detail-back" hidden>&larr; Back</button>
+      <button type="button" class="detail__close" id="detail-close" aria-label="Close the details panel">&times;</button>
+    </div>
     <div class="detail__body" id="detail-body"></div>
   </aside>
 </div>

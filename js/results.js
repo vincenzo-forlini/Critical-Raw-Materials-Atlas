@@ -10,7 +10,7 @@ import { groupByCompany } from './data.js';
 import { STAGE_LABELS } from './icons.js';
 import {
   esc, stageChip, statusChip, elementChips, confidenceBadge, empty, plural, maturityChip,
-  crmaChip, companyStatusChip,
+  crmaChip, companyStatusChip, rcard, companyLink,
 } from './ui.js';
 
 export function renderResults(container, model, state, facilities) {
@@ -54,21 +54,25 @@ function renderFacilities(facilities, model, state) {
 
   return `<div class="rlist">
     ${sorted
-      .map(
-        (f) => `<button class="rcard" data-act="focus-facility" data-id="${esc(f.id)}"
-          aria-current="${state.selectedKey === `${f.cityKey}::${f.stage}`}">
+      .map((f) =>
+        rcard({
+          act: 'focus-facility',
+          id: f.id,
+          label: `Show ${f.name} on the map`,
+          current: state.selectedKey === `${f.cityKey}::${f.stage}`,
+          body: `
           <div class="rcard__top">
             <span class="rcard__name">${esc(f.name)}</span>
             ${statusChip(f.status)}
           </div>
-          <div class="rcard__where">${esc(f.company.name)} &middot; ${esc(f.city.name)}, ${esc(f.country)}</div>
+          <div class="rcard__where">${companyLink(f.company)} &middot; ${esc(f.city.name)}, ${esc(f.country)}</div>
           <div class="rcard__meta">
             ${companyStatusChip(f.company)}
             ${crmaChip(f, { compact: true })}
             ${stageChip(f.stage)}
             ${elementChips(f.elements, model.elementById, { max: 3 })}
-          </div>
-        </button>`
+          </div>`,
+        })
       )
       .join('')}
   </div>`;
@@ -80,7 +84,11 @@ function renderCompanies(companies, model) {
       .map((g) => {
         const stages = [...g.stages];
         const countries = [...g.countries].sort();
-        return `<button class="rcard" data-act="open-company" data-id="${esc(g.company.key)}">
+        return rcard({
+          act: 'open-company',
+          id: g.company.key,
+          label: `Open ${g.company.name}`,
+          body: `
           <div class="rcard__top">
             <span class="rcard__name">${esc(g.company.name)}</span>
             ${maturityChip(g.company.maturity)}
@@ -91,8 +99,8 @@ function renderCompanies(companies, model) {
           <div class="rcard__meta">
             ${stages.map(stageChip).join('')}
             ${elementChips([...g.elements], model.elementById, { max: 3 })}
-          </div>
-        </button>`;
+          </div>`,
+        });
       })
       .join('')}
   </div>`;

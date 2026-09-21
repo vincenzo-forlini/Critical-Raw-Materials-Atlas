@@ -10,20 +10,24 @@ import { STAGE_LABELS, STAGES, stageIcon } from './icons.js';
 import { productionShares, productionSeries, productionStages, productionYears } from './data.js';
 import { donutChart, lineChart, meter } from './charts.js';
 import {
-  esc, stageChip, statusChip, elementChips, confidenceBadge, sourceLink, empty, plural,
+  esc, stageChip, statusChip, elementChips, confidenceBadge, sourceLink, empty, plural, rcard, companyLink,
   maturityChip, crmaChip, companyStatusChip, companyLogo,
 } from './ui.js';
 
 /* ------------------------------------------------------------------- parts */
 
 function facilityCard(f, elementById) {
-  return `<button class="rcard" data-act="focus-facility" data-id="${esc(f.id)}">
+  return rcard({
+    act: 'focus-facility',
+    id: f.id,
+    label: `Show ${f.name} on the map`,
+    body: `
     <div class="rcard__top">
       <span class="rcard__name">${esc(f.name)}</span>
       ${statusChip(f.status)}
     </div>
     <div class="rcard__where">
-      <span data-act="open-company" data-id="${esc(f.companyKey)}" class="link">${esc(f.company.name)}</span>
+      ${companyLink(f.company)}
       &middot; ${esc(f.city.name)}, ${esc(f.country)}
     </div>
     <div class="rcard__meta">
@@ -31,8 +35,8 @@ function facilityCard(f, elementById) {
       ${crmaChip(f, { compact: true })}
       ${stageChip(f.stage)}
       ${elementChips(f.elements, elementById, { max: 3 })}
-    </div>
-  </button>`;
+    </div>`,
+  });
 }
 
 function facilityDetail(f, elementById) {
@@ -53,7 +57,7 @@ function facilityDetail(f, elementById) {
       ${f.crmaProject ? `<dt>Project</dt><dd>${esc(f.crmaProject)}</dd>` : ''}
       ${f.crmaStage.length ? `<dt>CRM Act stage</dt><dd>${esc(f.crmaStage.join(', '))}</dd>` : ''}
       <dt>Materials</dt><dd>${f.elements.map((id) =>
-        `<span class="link" data-act="open-element" data-id="${esc(id)}">${esc(elementById.get(id)?.name || id)}</span>`
+        `<button type="button" class="link link--btn" data-act="open-element" data-id="${esc(id)}">${esc(elementById.get(id)?.name || id)}</button>`
       ).join(', ')}</dd>
     </dl>
     ${f.note ? `<p class="fdetail__note">${esc(f.note)}</p>` : ''}

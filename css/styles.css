@@ -492,7 +492,13 @@ button {
 
 .rlist { display: flex; flex-direction: column; gap: 5px; }
 
+/* The whole card is one target for its own action, but the material chips and
+   the operator name inside it are their own buttons, and a button cannot be
+   nested in a button. So the card is a plain div, its own target is an overlay
+   sitting behind the content, and the content passes clicks through to that
+   overlay except where something inside asks for them. */
 .rcard {
+  position: relative;
   width: 100%;
   text-align: left;
   padding: 9px 11px;
@@ -503,6 +509,21 @@ button {
 }
 .rcard:hover { background: var(--surface-3); border-color: var(--border-strong); }
 .rcard[aria-current="true"] { border-color: var(--accent-dim); background: var(--surface-3); }
+
+.rcard__hit {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+}
+.rcard__hit:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.rcard > *:not(.rcard__hit) { position: relative; z-index: 1; pointer-events: none; }
+/* Anything with its own action takes its own clicks back. */
+.rcard [data-act] { pointer-events: auto; }
 
 .rcard__top { display: flex; align-items: center; gap: 8px; }
 .rcard__name {
@@ -535,6 +556,16 @@ button {
   border: 1px solid transparent;
   white-space: nowrap;
 }
+/* A material chip opens that material factsheet, so it reads as pressable. */
+.chip--el {
+  font-family: inherit;
+  cursor: pointer;
+  border-color: var(--border-strong);
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.chip--el:hover { color: var(--text); background: var(--surface-3); border-color: var(--accent); }
+.chip--el:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 .chip--stage {
   color: var(--stage-c, var(--text-dim));
   border-color: color-mix(in srgb, var(--stage-c) 42%, transparent);
@@ -748,10 +779,33 @@ button {
 
 /* Floating rather than sitting in a strip of its own: the strip cost 44px of
    reading height and said only what the title already says. */
-.detail__close {
+/* Back and Close share one floating row, so neither costs the panel any
+   reading height of its own. */
+.detail__nav {
   position: absolute;
   top: 9px; right: 11px;
   z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.detail__back {
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 9px;
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.detail__back:hover { color: var(--text); background: var(--surface-3); border-color: var(--border-strong); }
+.detail__back:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.detail__close {
+  position: relative;
   width: 26px; height: 26px;
   display: grid; place-items: center;
   font-size: 17px; line-height: 1;
@@ -768,6 +822,7 @@ button {
 .detail__body { overflow-y: auto; padding: 14px 14px 20px; min-height: 0; }
 /* Keep the title clear of the close button. */
 .detail__body h2:first-child { padding-right: 34px; }
+.detail[data-back="true"] .detail__body h2:first-child { padding-right: 108px; }
 
 .detail h2 { margin: 0 0 2px; font-size: 18px; font-weight: 650; letter-spacing: -0.01em; }
 .detail h3 {
@@ -911,6 +966,8 @@ button {
 
 .link { color: var(--accent); cursor: pointer; }
 .link:hover { text-decoration: underline; }
+/* A link that is really a button: strip the button chrome, keep the link look. */
+.link--btn { font: inherit; background: none; border: 0; padding: 0; }
 
 .btn--wide { width: 100%; margin-top: 10px; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
