@@ -117,12 +117,24 @@ button {
    Shell
    =========================================================================== */
 
+/* Two columns: everything, and the factsheet. The factsheet spans the filter
+   bar's row as well as the map's, so opening one gains that row's height rather
+   than starting below it — a factsheet is a tall thing to read. The bar then
+   ends where the panel starts, which is why Reset sits with the pills. */
 .app {
   display: grid;
+  grid-template-columns: 1fr 0;
   grid-template-rows: auto auto 1fr;
   height: 100vh;
   height: 100dvh;
+  transition: grid-template-columns 0.18s ease;
 }
+.app.detail-open { grid-template-columns: 1fr var(--detail-w); }
+
+.header { grid-column: 1 / -1; grid-row: 1; }
+.fbar { grid-column: 1; grid-row: 2; }
+.main { grid-column: 1; grid-row: 3; }
+.detail { grid-column: 2; grid-row: 2 / 4; }
 
 .header {
   display: flex;
@@ -205,13 +217,11 @@ button {
 
 .main {
   display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr 0;
+  grid-template-columns: var(--sidebar-w) 1fr;
   min-height: 0;
   transition: grid-template-columns 0.18s ease;
 }
-.main.detail-open { grid-template-columns: var(--sidebar-w) 1fr var(--detail-w); }
-.main.sidebar-collapsed { grid-template-columns: 0 1fr 0; }
-.main.sidebar-collapsed.detail-open { grid-template-columns: 0 1fr var(--detail-w); }
+.main.sidebar-collapsed { grid-template-columns: 0 1fr; }
 
 /* ===========================================================================
    Filter bar
@@ -242,6 +252,9 @@ button {
 .fbar__sep { flex: none; width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
 .fbar__pills { display: flex; align-items: center; gap: 8px; flex: none; }
 .fbar__spacer { flex: 1; min-width: 12px; }
+/* Beside the pills rather than at the far right, where the factsheet now
+   reaches. */
+.fbar__reset { flex: none; margin-left: 4px; }
 
 .fpill {
   display: inline-flex;
@@ -719,24 +732,37 @@ button {
    =========================================================================== */
 
 .detail {
+  position: relative;
   min-width: 0; min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 1fr;
   background: var(--surface);
   border-left: 1px solid var(--border);
   overflow: hidden;
 }
 
-.detail__head {
-  display: flex; align-items: center; gap: 8px;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border);
+/* Floating rather than sitting in a strip of its own: the strip cost 44px of
+   reading height and said only what the title already says. */
+.detail__close {
+  position: absolute;
+  top: 9px; right: 11px;
+  z-index: 3;
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  font-size: 17px; line-height: 1;
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
 }
-.detail__kind {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
-  text-transform: uppercase; color: var(--text-faint);
-}
-.detail__body { overflow-y: auto; padding: 14px; min-height: 0; }
+.detail__close:hover { color: var(--text); background: var(--surface-3); }
+.detail__close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.detail__body { overflow-y: auto; padding: 14px 14px 20px; min-height: 0; }
+/* Keep the title clear of the close button. */
+.detail__body h2:first-child { padding-right: 34px; }
 
 .detail h2 { margin: 0 0 2px; font-size: 18px; font-weight: 650; letter-spacing: -0.01em; }
 .detail h3 {
@@ -834,10 +860,12 @@ button {
 }
 
 @media (max-width: 900px) {
+  .app,
+  .app.detail-open { grid-template-columns: 1fr; }
+  .fbar, .main { grid-column: 1; }
+
   .main,
-  .main.detail-open,
-  .main.sidebar-collapsed,
-  .main.sidebar-collapsed.detail-open { grid-template-columns: 1fr; }
+  .main.sidebar-collapsed { grid-template-columns: 1fr; }
 
   /* Panels become sheets over the map rather than columns beside it. */
   .sidebar, .detail {
@@ -851,7 +879,7 @@ button {
   .sidebar { left: 0; }
   .detail { right: 0; }
   .main.sidebar-collapsed .sidebar { display: none; }
-  .main:not(.detail-open) .detail { display: none; }
+  .app:not(.detail-open) .detail { display: none; }
   .header__sub { display: none; }
   .legend { display: none; }
 }

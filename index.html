@@ -12,7 +12,7 @@
 
 <div class="loading" id="loading">Loading the dataset…</div>
 
-<div class="app">
+<div class="app" id="app">
 
   <header class="header">
     <div class="header__brand">
@@ -34,8 +34,8 @@
     </div>
     <div class="fbar__sep"></div>
     <div class="fbar__pills" id="filter-pills"></div>
+    <button class="btn btn--sm fbar__reset" id="reset-all">Reset</button>
     <div class="fbar__spacer"></div>
-    <button class="btn btn--sm" id="reset-all">Reset</button>
   </div>
 
   <div class="fpops" id="filter-pops" hidden></div>
@@ -61,16 +61,12 @@
       <div class="map-note" id="map-note"></div>
     </div>
 
-    <aside class="detail" id="detail" aria-label="Details" aria-live="polite">
-      <div class="detail__head">
-        <span class="detail__kind" id="detail-kind">Details</span>
-        <div class="header__spacer"></div>
-        <button class="btn btn--ghost btn--sm" id="detail-close" aria-label="Close the details panel">&times;</button>
-      </div>
-      <div class="detail__body" id="detail-body"></div>
-    </aside>
-
   </div>
+
+  <aside class="detail" id="detail" aria-label="Details" aria-live="polite">
+    <button class="detail__close" id="detail-close" aria-label="Close the details panel">&times;</button>
+    <div class="detail__body" id="detail-body"></div>
+  </aside>
 </div>
 
 <!-- Periodic table: which chemical elements the EU treats as critical. -->

@@ -163,7 +163,9 @@ function render(state = S.state) {
 }
 
 function renderDetail(state = S.state) {
-  const main = $('main');
+  // The class goes on .app, not .main: the factsheet is a column of .app so it
+  // can reach up over the filter bar.
+  const main = $('app');
   const body = $('detail-body');
 
   if (!state.detail) {
@@ -173,9 +175,8 @@ function renderDetail(state = S.state) {
     return;
   }
 
-  const { kind, id, stage } = state.detail;
-  const kinds = { city: 'Location', company: 'Company', element: 'Material' };
-  $('detail-kind').textContent = kinds[kind] || 'Details';
+  const { kind, id } = state.detail;
+  const { stage } = state.detail;
 
   if (kind === 'city') {
     const visibleIds = new Set(currentFacilities().map((f) => f.id));
