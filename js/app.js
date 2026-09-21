@@ -336,7 +336,11 @@ function wireChrome() {
   // The popovers are placed by hand under their pill, so they have to be put
   // back when anything moves them.
   window.addEventListener('resize', () => { if (anyFacetOpen()) render(S.state); });
-  $('fbar').addEventListener('scroll', () => { if (anyFacetOpen()) render(S.state); });
+  // Whichever element is the sideways scroller: the bar itself on a wide
+  // window, the pills alone once the bar wraps onto two rows on a phone.
+  for (const el of [$('fbar'), $('filter-pills')]) {
+    el.addEventListener('scroll', () => { if (anyFacetOpen()) render(S.state); });
+  }
 
   $('reset-all').addEventListener('click', resetEverything);
   $('toggle-sidebar').addEventListener('click', () => {

@@ -26,10 +26,60 @@ import { stageIcon, STAGES, STAGE_LABELS, STAGE_DESCRIPTIONS } from './icons.js'
  */
 const EUROPE_CENTRE = [56.51, 15.03];
 
-/** Zoom 4 crops Europe badly on a phone-width viewport, so start further out. */
+/**
+ * The same framing for a portrait window.
+ *
+ * The landscape numbers cannot serve both. They lean the view east and north to
+ * leave the right-hand side free for the factsheet, which on a tall narrow
+ * window put the sites hard against the left edge — clipped off it on a tablet
+ * — with the Arctic filling the top third. A portrait window has no
+ * right-hand panel to leave room for, so this one simply centres the sites.
+ */
+const EUROPE_CENTRE_PORTRAIT = [54, 4.5];
+
+/** How far the sites reach west to east, in degrees: roughly 22W to 28E. Used
+ *  only to pick a portrait zoom that does not crop them. */
+const SITES_LON_SPAN = 50;
+
+function isPortrait() {
+  return typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
+}
+
+/**
+ * Landscape keeps the numbers it has. Portrait is width-limited — the region is
+ * wider than it is tall, so a tall window runs out of width first — and derives
+ * its zoom from how much width there actually is, instead of guessing from one
+ * breakpoint.
+ */
 function preferredZoom() {
   if (typeof window === 'undefined') return 4;
+  if (isPortrait()) {
+    const usable = Math.max(240, window.innerWidth - 32);
+    // Largest whole zoom whose visible span still covers the sites.
+    const z = Math.floor(Math.log2((usable * 360) / (256 * SITES_LON_SPAN)));
+    return Math.max(2, Math.min(5, z));
+  }
   return window.innerWidth < 700 ? 3 : 4;
+}
+
+function defaultCentre() {
+  return isPortrait() ? EUROPE_CENTRE_PORTRAIT : EUROPE_CENTRE;
+}
+
+/**
+ * Re-frame when the window turns.
+ *
+ * Asked of the media query rather than inferred from the container's own resize
+ * observer: the container changes width for all sorts of reasons a panel opening
+ * is one of them, and those must keep the view they have. Only the window
+ * actually turning is a different framing.
+ */
+function watchOrientation() {
+  if (typeof window === 'undefined' || !window.matchMedia) return;
+  const portrait = window.matchMedia('(orientation: portrait)');
+  const onFlip = () => fitEurope();
+  if (portrait.addEventListener) portrait.addEventListener('change', onFlip);
+  else portrait.addListener(onFlip); // older Safari
 }
 
 // Must stay inside the clip box used by scripts/build-europe-geo.mjs, so the
@@ -62,7 +112,7 @@ function applyMarkerSize() {
 
 export function initMap() {
   map = L.map('map', {
-    center: EUROPE_CENTRE,
+    center: defaultCentre(),
     zoom: preferredZoom(),
     minZoom: 2,
     maxZoom: 9,
@@ -90,6 +140,7 @@ export function initMap() {
   map.on('zoomend', updateCityLabels);
   map.on('resize', applyMinZoom);
   watchContainerSize();
+  watchOrientation();
   applyMinZoom();
   applyMarkerSize();
 
@@ -140,13 +191,7 @@ function applyMinZoom() {
 }
 
 /**
- * Put the whole basemap in view, biased left. Used for the opening view, for
- * Reset, and whenever the map's container changes width — opening the detail
- * panel takes nearly 400px off the right, and without a re-fit the countries
- * just sit where they were, crowded against it.
- */
-/**
- * Go to the pinned opening view. Used on load and by Reset.
+ * Go to the default view for the window's shape. Used on load and by Reset.
  *
  * Never animated: an animated move lands after anything a container resize
  * triggers, so the two raced and the slower one won with numbers computed for
@@ -154,7 +199,7 @@ function applyMinZoom() {
  */
 export function fitEurope() {
   if (!map) return;
-  map.setView(EUROPE_CENTRE, Math.max(preferredZoom(), map.getMinZoom()), { animate: false });
+  map.setView(defaultCentre(), Math.max(preferredZoom(), map.getMinZoom()), { animate: false });
 }
 
 export function getMap() {

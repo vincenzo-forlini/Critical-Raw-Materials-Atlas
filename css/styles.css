@@ -146,14 +146,19 @@ button {
   z-index: 600;
 }
 
-.header__brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.header__brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex: 0 1 auto; }
 
+/* Truncates rather than shoving the actions off the right edge, which is what
+   it did on a phone: About was simply cut in half. */
 .header__title {
   margin: 0;
+  min-width: 0;
   font-size: 15px;
   font-weight: 650;
   letter-spacing: -0.01em;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header__sub {
@@ -166,7 +171,7 @@ button {
 
 .header__spacer { flex: 1; }
 
-.header__actions { display: flex; align-items: center; gap: 8px; }
+.header__actions { display: flex; align-items: center; gap: 8px; flex: none; }
 
 /* The dataset is a seed. Say so where it cannot be missed. */
 .data-banner {
@@ -951,9 +956,32 @@ button {
 @media (max-width: 620px) {
   .data-banner { display: none; }
   .map-note { display: none; }
-  .search { display: none; }
   .fbar__sep { display: none; }
+  .fbar__spacer { display: none; }
   .fpop { width: min(290px, calc(100vw - 24px)); }
+
+  /* Two rows: the search across the top, then the pills with Reset beside them.
+     This used to hide the search outright, which left a phone with no way to
+     search at all — the one thing a small screen needs most, since scrolling
+     137 cards to find a site is not a search. The pills keep their own sideways
+     scroller; the bar itself no longer scrolls, so it can wrap. */
+  .fbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 12px;
+    gap: 8px;
+    overflow: visible;
+  }
+  .search { width: 100%; flex: 0 0 100%; order: 1; }
+  .fbar__pills {
+    order: 2;
+    flex: 1 1 0;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .fbar__pills::-webkit-scrollbar { display: none; }
+  .fbar__reset { order: 3; }
 }
 
 @media (prefers-reduced-motion: reduce) {
