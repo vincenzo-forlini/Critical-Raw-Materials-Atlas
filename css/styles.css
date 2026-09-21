@@ -561,9 +561,13 @@ button {
 
 /* Legend ----------------------------------------------------------------- */
 
+/* Right-hand side, clear of the filter panel and the collapse handle that both
+   hug the left edge. It reads as a legend there, and the open sea east of the
+   mapped countries is the one part of the canvas with nothing in it. Sits above
+   the site-count pill in the same corner. */
 .legend {
   position: absolute;
-  left: 14px; bottom: 14px;
+  right: 14px; bottom: 48px;
   z-index: 500;
   padding: 10px 12px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
