@@ -177,10 +177,10 @@ function applyMinZoom() {
  * panel takes nearly 400px off the right, and without a re-fit the countries
  * just sit where they were, crowded against it.
  */
-export function fitEurope({ animate = false } = {}) {
+export function fitEurope() {
   if (!map) return;
   if (!fitTarget || !fitTarget.isValid()) {
-    map.setView(EUROPE_CENTRE, Math.max(preferredZoom(), map.getMinZoom()), { animate });
+    map.setView(EUROPE_CENTRE, Math.max(preferredZoom(), map.getMinZoom()), { animate: false });
     return;
   }
   // setView rather than fitBounds: zoomSnap is 1, so fitBounds can only land on
@@ -194,12 +194,13 @@ export function fitEurope({ animate = false } = {}) {
     map.project(fitTarget.getCenter(), zoom).add(L.point(LEFT_BIAS, 0)),
     zoom
   );
-  map.setView(centre, zoom, { animate });
-  // An unanimated fitBounds has already fired its move events by here, so
-  // clearing the flag now cannot be undone by them; an animated one fires later,
-  // which is what the once() covers.
+  // Never animated. An animated fit lands after any re-fit the container's own
+  // resize triggers, so the two raced and the slower one won with numbers
+  // computed for the old width — Reset could end up hundreds of pixels off.
+  map.setView(centre, zoom, { animate: false });
+  // setView is unanimated, so its move events have already fired by here and
+  // cannot undo this.
   userMoved = false;
-  map.once('moveend', () => { userMoved = false; });
 }
 
 export function getMap() {
@@ -399,7 +400,7 @@ export function resetView() {
   if (!map) return;
   map.closePopup();
   userMoved = false;
-  fitEurope({ animate: true });
+  fitEurope();
 }
 
 export function invalidate() {

@@ -127,7 +127,6 @@ button {
   grid-template-rows: auto auto 1fr;
   height: 100vh;
   height: 100dvh;
-  transition: grid-template-columns 0.18s ease;
 }
 .app.detail-open { grid-template-columns: 1fr var(--detail-w); }
 
@@ -215,11 +214,17 @@ button {
 
 .btn--sm { padding: 3px 9px; font-size: 12px; }
 
+/* No transition on the track sizes, deliberately.
+   Animating grid-template-columns proved unreliable — the computed value could
+   stick at the old tracks with no animation running, leaving the factsheet at
+   zero width while its class was set, so the map never gave up the space and
+   the two sat crushed together. It is also wasteful: the map's ResizeObserver
+   fires on every frame of such an animation, and each one re-fits the view.
+   Snapping is both correct and cheaper. */
 .main {
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
   min-height: 0;
-  transition: grid-template-columns 0.18s ease;
 }
 .main.sidebar-collapsed { grid-template-columns: 0 1fr; }
 

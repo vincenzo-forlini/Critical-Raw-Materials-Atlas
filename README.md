@@ -8,9 +8,14 @@ is and who runs it. Open a material to read what it is, what it is used for, and
 countries control its supply.
 
 **Explore the CRMs** opens a periodic table with the critical and strategic materials
-highlighted; click any element for its factsheet. **Reset map** in the header puts the page back
-exactly as it loads — every filter on, search cleared, panels closed, map recentred — without a
-page reload.
+highlighted; click any element for its factsheet. **Reset**, at the right-hand end of the filter
+bar, puts the page back exactly as it loads — every filter on, search cleared, panels closed, map
+recentred — without a page reload.
+
+Filters live in a bar across the top of the page: one pill per facet, each dropping its own list
+of options. They used to be a column of six stacked groups in the left panel, which ran to about
+1500px of content in a 600px window and was collapsed entirely whenever a factsheet opened. The
+left panel now shows results — sites and companies — and the filters stay put.
 
 ![Materials](https://img.shields.io/badge/materials-34%20EU%20CRMs-6aa6ff)
 ![Sites](https://img.shields.io/badge/sites-137-a4ea86)
@@ -225,9 +230,10 @@ The **Explore the CRMs** button opens the periodic table with every listed mater
 highlighted — gold for the 17 strategic ones, blue for the rest — and the number of European
 sites in the corner of each cell.
 
-**Opening a factsheet filters the map to that material** and collapses the filter panel, so the
-map and the panel are always describing the same thing. Widen it again with *Select all* under
-Material. A material with no European sites leaves the map empty, and the factsheet says so.
+**Opening a factsheet filters the map to that material**, so the map and the factsheet are always
+describing the same thing. Widen it again with *Select all* under the Material pill, or with
+*Reset*. The factsheet takes the right-hand column and spans the filter bar's row as well, since
+it is a tall thing to read; the results panel folds away to give the map the room. A material with no European sites leaves the map empty, and the factsheet says so.
 
 The mapping from the EU list to the table is not one-to-one, and the view says so rather than
 tidying it away:
