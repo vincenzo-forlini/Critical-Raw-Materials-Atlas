@@ -375,6 +375,17 @@ function onDelegatedClick(e) {
       goBack();
       break;
 
+    // Toggled straight on the element rather than through state: renderLegend
+    // patches which rows are dimmed and never touches data-open, so the choice
+    // survives every render without needing to live in the store.
+    case 'legend-toggle': {
+      const legend = $('legend');
+      const open = legend.getAttribute('data-open') !== 'true';
+      legend.setAttribute('data-open', String(open));
+      el.setAttribute('aria-expanded', String(open));
+      break;
+    }
+
     case 'results-tab':
       S.setResultsTab(id);
       break;

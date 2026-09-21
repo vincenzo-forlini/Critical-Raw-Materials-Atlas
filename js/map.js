@@ -416,14 +416,22 @@ export function renderLegend(container, activeStages) {
   // mid-hover, and the only thing that actually changes here is which rows are
   // dimmed.
   if (!container.firstElementChild) {
+    // The heading is a button because on a narrow window the key collapses to a
+    // row of pictograms and this is what opens it. On a wide one it is just a
+    // heading, and the stylesheet makes it look like one.
+    container.setAttribute('data-open', 'false');
     container.innerHTML = `
-      <div class="legend__title">Stage of the chain</div>
+      <button type="button" class="legend__head">
+        <span class="legend__title">Stage of the chain</span>
+        <svg class="legend__chev" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
       ${STAGES.map(
         (s) => `
         <div class="legend__row" data-stage="${s}" style="--stage-c: var(--stage-${s})"
              title="${STAGE_DESCRIPTIONS[s]}">
           <span class="legend__dot">${stageIcon(s)}</span>
-          <span>${STAGE_LABELS[s]}</span>
+          <span class="legend__label">${STAGE_LABELS[s]}</span>
         </div>`
       ).join('')}
     `;
@@ -432,5 +440,23 @@ export function renderLegend(container, activeStages) {
   for (const row of container.querySelectorAll('.legend__row')) {
     const off = String(!active.has(row.dataset.stage));
     if (row.dataset.off !== off) row.dataset.off = off;
+  }
+
+  // The heading only does something where the key collapses. Above that
+  // breakpoint the rows are always shown, so leaving it as a live button would
+  // put a focusable control in the page that does nothing and an aria-expanded
+  // that describes nothing.
+  const head = container.querySelector('.legend__head');
+  if (!head) return;
+  const compact = typeof window !== 'undefined'
+    && window.matchMedia('(max-width: 900px)').matches;
+  if (compact) {
+    head.setAttribute('data-act', 'legend-toggle');
+    head.setAttribute('aria-expanded', container.getAttribute('data-open') === 'true' ? 'true' : 'false');
+    head.removeAttribute('tabindex');
+  } else {
+    head.removeAttribute('data-act');
+    head.removeAttribute('aria-expanded');
+    head.setAttribute('tabindex', '-1');
   }
 }

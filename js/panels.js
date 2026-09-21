@@ -264,23 +264,23 @@ export function elementPanel(model, elementId, { productionStage } = {}) {
           .join('')}</div>`
       : '';
 
+  // Notes here are addressed to whoever is reading the factsheet, not to
+  // whoever maintains the CSV. "Add more years to data/production.csv" appeared
+  // under every material, since only one year is recorded for all of them, and
+  // promised a trend line that no reader could produce.
   const productionBlock = !activeStage
-    ? `<p class="faint">
-         No production data recorded yet. Add rows to <code>data/production.csv</code>
-         and the charts here will fill in.
-       </p>`
+    ? `<p class="faint">Who produces ${esc(el.name)} is not recorded in this dataset.</p>`
     : `${stageTabs}
        ${donutChart(shares, {
          title: `Share of world ${activeStage}`,
          subtitle: `${latestYear} · indicative figures, verify against the sources below`,
        })}
-       ${lineChart(series, { title: 'Over time', unit: shares.unit })}
-       ${years.length < 2
-         ? `<p class="faint">
-              Only ${latestYear} is recorded. Add more years to <code>data/production.csv</code>
-              to see a trend line here.
-            </p>`
-         : ''}`;
+       ${years.length >= 2
+         ? lineChart(series, { title: 'Over time', unit: shares.unit })
+         : `<p class="faint idx">
+              A single year, ${latestYear}, so there is no trend to plot. The sources
+              below carry the full series.
+            </p>`}`;
 
   return `
     <h2>${esc(el.name)}${el.symbol ? ` <span class="faint">${esc(el.symbol)}</span>` : ''}</h2>

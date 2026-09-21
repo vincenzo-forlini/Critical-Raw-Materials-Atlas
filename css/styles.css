@@ -720,6 +720,19 @@ button {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
 }
+/* A button, but a heading to look at: the chevron and the pressability only
+   appear once the key collapses, below 900px. */
+.legend__head {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  cursor: default;
+}
+.legend__chev { display: none; }
 .legend__title {
   font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
   text-transform: uppercase; color: var(--text-faint); margin-bottom: 7px;
@@ -953,7 +966,25 @@ button {
   .main.sidebar-collapsed .sidebar { display: none; }
   .app:not(.detail-open) .detail { display: none; }
   .header__sub { display: none; }
-  .legend { display: none; }
+
+  /* The key is the only thing that says what the marker colours mean, and
+     colour is the map's only encoding, so it stays rather than being hidden —
+     collapsed to a row of pictograms, which is all that fits, and opening to
+     the labels on a tap. */
+  .legend { right: 10px; bottom: 46px; padding: 7px 9px; }
+  .legend__head { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .legend__head:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .legend__title { margin-bottom: 0; }
+  .legend__chev { display: block; width: 11px; height: 11px; color: var(--text-faint); flex: none; }
+
+  .legend[data-open="false"] { display: flex; align-items: center; gap: 7px; }
+  .legend[data-open="false"] .legend__title { display: none; }
+  .legend[data-open="false"] .legend__head { width: auto; }
+  .legend[data-open="false"] .legend__label { display: none; }
+  .legend[data-open="false"] .legend__row { padding: 0; }
+
+  .legend[data-open="true"] .legend__head { margin-bottom: 7px; }
+  .legend[data-open="true"] .legend__chev { transform: rotate(180deg); }
 }
 
 @media (max-width: 900px) {
@@ -962,7 +993,9 @@ button {
 
 @media (max-width: 620px) {
   .data-banner { display: none; }
-  .map-note { display: none; }
+  /* The count stays. Filtering with no idea how much you have narrowed by is
+     worse than a slightly busier corner. */
+  .map-note { right: 10px; bottom: 18px; font-size: 10px; padding: 3px 7px; }
   .fbar__sep { display: none; }
   .fbar__spacer { display: none; }
   .fpop { width: min(290px, calc(100vw - 24px)); }
