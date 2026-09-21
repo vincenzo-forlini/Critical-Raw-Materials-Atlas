@@ -10,25 +10,27 @@
 
 import { stageIcon, STAGES, STAGE_LABELS, STAGE_DESCRIPTIONS } from './icons.js';
 
-/** Only a fallback now: the opening view is fitted to the basemap instead. */
-const EUROPE_CENTRE = [56.5, 12];
+/**
+ * The opening view, pinned.
+ *
+ * A fixed centre and zoom, not a fit computed from the data. Fitting sounded
+ * right and was worse in practice: zoomSnap is 1, so a fit can only land on a
+ * whole zoom and usually left slack on one side, and the framing then drifted
+ * whenever the data or the window changed. These numbers are the framing that
+ * was settled on by eye — Iceland in at the top left, the Mediterranean in at
+ * the bottom, the sites sitting left of centre so the factsheet has somewhere
+ * to open into.
+ *
+ * Longitude 15 rather than the 12 this started at is what puts the sites left
+ * of centre instead of squarely in the middle.
+ */
+const EUROPE_CENTRE = [56.51, 15.03];
 
 /** Zoom 4 crops Europe badly on a phone-width viewport, so start further out. */
 function preferredZoom() {
   if (typeof window === 'undefined') return 4;
   return window.innerWidth < 700 ? 3 : 4;
 }
-
-/** Breathing room around the data when picking the opening zoom, in px. */
-const FIT_PAD = [48, 36];
-
-/**
- * Pixels to shift the view east, which moves the content west by the same
- * amount. The detail panel opens on the right and takes nearly 400px, so
- * sitting a little left of centre means the sites are already where they need
- * to be rather than being crowded against it.
- */
-const LEFT_BIAS = 56;
 
 // Must stay inside the clip box used by scripts/build-europe-geo.mjs, so the
 // straight edges left by clipping are never reachable.
@@ -39,18 +41,6 @@ const MAX_BOUNDS = [
 
 let map = null;
 let basemapLayer = null;
-/**
- * What the opening view is fitted to: the extent of the cities that actually
- * hold sites, set by the app once the data is in.
- *
- * Not the basemap's own extent, which is the clip box from
- * scripts/build-europe-geo.mjs and runs from 31W to 82E — a third of it is open
- * Atlantic and Arctic with nothing on it, so fitting that framed the whole of
- * Europe into the middle third of the canvas.
- */
-let fitTarget = null;
-/** Set once the reader pans or zooms. Their view then wins over any re-fit. */
-let userMoved = false;
 let markerLayer = null;
 const markersByKey = new Map();
 let selectedKey = null;
@@ -99,10 +89,6 @@ export function initMap() {
   map.on('zoomend', applyMarkerSize);
   map.on('zoomend', updateCityLabels);
   map.on('resize', applyMinZoom);
-  // Dragging and wheel-zooming are unambiguously the reader's. Once either has
-  // happened, a container resize keeps their view instead of re-fitting.
-  map.on('dragend', () => { userMoved = true; });
-  map.getContainer().addEventListener('wheel', () => { userMoved = true; }, { passive: true });
   watchContainerSize();
   applyMinZoom();
   applyMarkerSize();
@@ -128,8 +114,10 @@ function watchContainerSize() {
       first = false; // the initial callback fires at the current size
       return;
     }
+    // invalidateSize keeps the centre, so a panel opening on the right narrows
+    // the canvas around the same point and the sites shift left with it — which
+    // is what should happen. Nothing is recomputed, so the pinned framing holds.
     map.invalidateSize({ animate: false });
-    if (!userMoved) fitEurope();
   });
   observer.observe(map.getContainer());
 }
@@ -144,29 +132,9 @@ function watchContainerSize() {
  * clip edges sit outside the view on every screen size, and maxBounds stops you
  * panning to them.
  */
-/**
- * Tell the map where the data is. Called once after the model loads.
- * @param {Array<[number, number]>} points lat/lon pairs
- */
-export function setFitTarget(points) {
-  if (!points || points.length === 0) return;
-  fitTarget = L.latLngBounds(points);
-  applyMinZoom();
-}
-
-/** Total padding, as Leaflet wants it for getBoundsZoom. */
-function fitPadding() {
-  return L.point(FIT_PAD[0] * 2, FIT_PAD[1] * 2);
-}
-
 function applyMinZoom() {
   if (!map) return;
-  let floor = preferredZoom();
-  if (fitTarget && fitTarget.isValid()) {
-    // The floor must never sit above the zoom that frames the data, or the
-    // opening view would be forced to crop it.
-    floor = Math.min(floor, map.getBoundsZoom(fitTarget, false, fitPadding()));
-  }
+  const floor = preferredZoom();
   map.setMinZoom(floor);
   if (map.getZoom() < floor) map.setZoom(floor);
 }
@@ -177,30 +145,16 @@ function applyMinZoom() {
  * panel takes nearly 400px off the right, and without a re-fit the countries
  * just sit where they were, crowded against it.
  */
+/**
+ * Go to the pinned opening view. Used on load and by Reset.
+ *
+ * Never animated: an animated move lands after anything a container resize
+ * triggers, so the two raced and the slower one won with numbers computed for
+ * the old width, which could leave Reset hundreds of pixels off target.
+ */
 export function fitEurope() {
   if (!map) return;
-  if (!fitTarget || !fitTarget.isValid()) {
-    map.setView(EUROPE_CENTRE, Math.max(preferredZoom(), map.getMinZoom()), { animate: false });
-    return;
-  }
-  // setView rather than fitBounds: zoomSnap is 1, so fitBounds can only land on
-  // a whole zoom anyway, and doing the two steps by hand lets the content be
-  // centred and then nudged rather than wedged into a lopsided box.
-  const zoom = Math.max(map.getMinZoom(), map.getBoundsZoom(fitTarget, false, fitPadding()));
-  // Bake the nudge into the centre rather than panning afterwards. A separate
-  // panBy on top of an animated setView fought the animation and compounded,
-  // which left Reset hundreds of pixels off target.
-  const centre = map.unproject(
-    map.project(fitTarget.getCenter(), zoom).add(L.point(LEFT_BIAS, 0)),
-    zoom
-  );
-  // Never animated. An animated fit lands after any re-fit the container's own
-  // resize triggers, so the two raced and the slower one won with numbers
-  // computed for the old width — Reset could end up hundreds of pixels off.
-  map.setView(centre, zoom, { animate: false });
-  // setView is unanimated, so its move events have already fired by here and
-  // cannot undo this.
-  userMoved = false;
+  map.setView(EUROPE_CENTRE, Math.max(preferredZoom(), map.getMinZoom()), { animate: false });
 }
 
 export function getMap() {
@@ -399,7 +353,6 @@ export function fitToGroups(groups) {
 export function resetView() {
   if (!map) return;
   map.closePopup();
-  userMoved = false;
   fitEurope();
 }
 

@@ -13,7 +13,6 @@ import {
 } from './data.js';
 import {
   initMap, renderBasemap, renderCities, renderMarkers, renderLegend, tintCountries, setSelected,
-  setFitTarget,
   flyToCity, resetView, invalidate, openPopupAt, closePopup,
 } from './map.js';
 import { STAGES } from './icons.js';
@@ -88,12 +87,6 @@ async function boot() {
 
   initMap();
   renderBasemap(geo);
-  // Frame the view on the cities that hold sites, rather than on the basemap's
-  // clip box, most of which is empty sea.
-  setFitTarget([...new Set(model.facilities.map((f) => f.cityKey))].map((key) => {
-    const c = model.cityByKey.get(key);
-    return [c.lat, c.lon];
-  }));
   renderCities(model.cities);
   renderLegend($('legend'), STAGES);
 
