@@ -48,6 +48,23 @@ The site is static, so GitHub Pages serves it straight from the repository:
 For the daily news workflow to commit its results, also set
 **Settings → Actions → General → Workflow permissions → Read and write permissions**.
 
+### Link previews
+
+Sharing the URL anywhere — LinkedIn, Slack, a message — pulls a card from the
+`og:` tags in `index.html` and `about.html`. Two things about them:
+
+- **The host is written out in full.** `og:image` is ignored by every scraper
+  unless it is an absolute URL, so the GitHub Pages address is hard-coded. Move
+  the site and those URLs are what need changing.
+- **LinkedIn caches the card on first share.** Edit the tags, push, and then run
+  the URL through LinkedIn's Post Inspector, or your first post keeps whatever
+  it scraped the first time — including nothing at all.
+
+`assets/og-cover.png` is the card image, 1200×630. It is drawn from the real
+basemap and the real markers rather than screenshotted, so it stays honest about
+what the map contains; the counts on it are baked in, so regenerate it if the
+dataset moves much. `assets/icon.svg` is the favicon.
+
 ---
 
 ## Edit the data
@@ -176,9 +193,10 @@ The encyclopedia's supply shares, import reliance and recycling rates are **indi
 figures of the kind published in the EU's raw materials assessments. They are there for scale,
 not for citation. Follow the source links on each material for the real numbers.
 
-Seven of the 34 materials have no European site in the dataset — beryllium, gallium, magnesium,
-phosphorus, scandium, strontium and titanium metal. That is a finding, not a gap: Europe has
-essentially no production of them.
+Five of the 34 materials have no European site in the dataset — beryllium, phosphorus,
+scandium, strontium and titanium metal. That is a finding, not a gap: Europe has essentially no
+production of them. Gallium and magnesium each have exactly one, which is nearly the same
+finding.
 
 ### Company logos
 
@@ -197,7 +215,7 @@ They are fetched into the repository rather than hot-linked, so the map still wo
 no company's server learns who is browsing it. Logos are trademarks of their owners and appear
 only to identify the company whose sites are shown.
 
-**88 of 111 companies have one.** The other 23 get a coloured monogram of their initials, drawn
+**87 of 111 companies have one.** The other 24 get a coloured monogram of their initials, drawn
 in the browser. That is a deliberate resting state, not a failure: a company whose logo cannot be
 fetched still looks intentional. Never substitute another company's mark to fill the gap.
 

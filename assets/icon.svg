@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="European Critical Raw Materials Map">
+  <!-- The mine cart from js/icons.js, on the page's own background. Mining is
+       the first stage of the chain and the one fixed colour in the palette, so
+       it is what the project looks like in one 16px square. -->
+  <rect width="64" height="64" rx="14" fill="#131318"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" fill="none"
+        stroke="#2a2a35" stroke-width="1.5"/>
+  <g transform="translate(8 8) scale(2)" fill="#ff3d86">
+    <circle cx="9.2" cy="6.6" r="1.9"/>
+    <circle cx="13.4" cy="7.3" r="1.5"/>
+    <path d="M3 10h18l-2.6 7.2H5.6z"/>
+    <circle cx="8.4" cy="20.2" r="2"/>
+    <circle cx="15.6" cy="20.2" r="2"/>
+  </g>
+</svg>
