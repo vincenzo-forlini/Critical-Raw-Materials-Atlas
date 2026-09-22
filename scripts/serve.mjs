@@ -100,7 +100,7 @@ server.on('error', (err) => {
 
 server.on('listening', () => {
   const url = `http://localhost:${port}/`;
-  console.log(`\n  European Critical Raw Materials Map`);
+  console.log(`\n  Critical Raw Materials Atlas`);
   console.log(`  running at ${url}`);
   console.log(`\n  Edit the CSVs in data/ and refresh the page to see your changes.`);
   console.log(`  Press Ctrl+C to stop.\n`);

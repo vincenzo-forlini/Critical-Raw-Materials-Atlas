@@ -1,6 +1,8 @@
-# European Critical Raw Materials Map
+# Critical Raw Materials Atlas
 
-An interactive map of where the EU's critical raw materials are **mined, processed, refined,
+**Europe's critical raw materials, from mine to magnet.**
+
+An interactive atlas of where the EU's critical raw materials are **mined, processed, refined,
 smelted, recycled and recovered** across Europe — and which companies operate each site.
 
 Filter by material, by country and by stage of the supply chain. Click a site to see where it

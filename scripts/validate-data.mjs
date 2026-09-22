@@ -62,7 +62,7 @@ function printGroup(title, items, colour) {
   }
 }
 
-console.log(bold('\nEuropean Critical Raw Materials Map — data check'));
+console.log(bold('\nCritical Raw Materials Atlas — data check'));
 
 const s = model.stats;
 console.log(
