@@ -73,6 +73,7 @@ async function boot() {
   model = buildModel({ elementsCsv, citiesCsv, companiesCsv, facilitiesCsv, productionCsv });
 
   showIssues(model.issues);
+  showLastUpdated(model.facilities);
 
   // Everything is selected by default: the map opens showing the whole dataset,
   // and the reader narrows from there rather than choosing before seeing anything.
@@ -471,6 +472,30 @@ function closePeriodic() {
 }
 
 /* -------------------------------------------------------------- data errors */
+
+/**
+ * Stamp the header with the most recent check in the dataset.
+ *
+ * Read from the rows rather than typed into the HTML, so it cannot say the
+ * file was updated on a day the file was not. A row with no date is simply
+ * absent from the maximum; if no row has one, the stamp stays empty and the
+ * CSS hides it.
+ */
+function showLastUpdated(facilities) {
+  const el = $('last-updated');
+  if (!el) return;
+  let newest = '';
+  for (const f of facilities) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(f.last_checked) && f.last_checked > newest) {
+      newest = f.last_checked;
+    }
+  }
+  if (!newest) return;
+  const [y, m, d] = newest.split('-');
+  const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(m) - 1];
+  el.textContent = `Last updated ${Number(d)} ${month} ${y}`;
+}
 
 function showIssues(issues) {
   const errors = issues.filter((i) => i.severity === 'error');

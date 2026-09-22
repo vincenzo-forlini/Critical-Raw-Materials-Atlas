@@ -84,9 +84,10 @@
   <div class="callout">
     <p style="margin:0">
       <strong>This is a seed dataset.</strong> It was compiled from public knowledge as a
-      starting point, and <em>no row has been verified against its source</em>. Ownership,
-      capacity and operating status change often in this industry. Every site carries a
-      confidence flag and a source link — check them before citing anything here.
+      starting point. Every row has now been checked once and carries the date it was checked,
+      but ownership, capacity and operating status change often in this industry, and a check
+      goes stale. Every site carries a confidence flag and a source link — check them before
+      citing anything here.
     </p>
   </div>
 
@@ -284,8 +285,9 @@
     <li><strong>Low</strong> — included because the site matters, but a detail is genuinely uncertain. Treat as a lead, not a fact.</li>
   </ul>
   <p>
-    <code>last_checked</code> is blank on every seeded row, because none has been verified.
-    Fill it in as you check them.
+    <code>last_checked</code> records the day someone last looked at a row against its source.
+    Every row carries one; the most recent of them is the date shown in the header. Update it
+    whenever you re-check a row, and leave it alone when you only tidy the wording.
   </p>
 
   <h2>Figures in the encyclopedia</h2>
@@ -341,7 +343,8 @@
   </p>
 
   <footer>
-    Code and data licensed under MIT. Compiled September 2026.
+    Code and data licensed under MIT. Compiled September 2026 by
+    <a href="https://www.linkedin.com/in/vincenzo-forlini/" target="_blank" rel="noopener">Vincenzo Forlini</a>.
     <a href="index.html">Back to the map</a>
   </footer>
 
