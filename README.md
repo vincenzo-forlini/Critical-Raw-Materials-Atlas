@@ -192,15 +192,35 @@ machine-readable when this was built.
 
 ## Honesty about the data
 
-**This is a seed dataset, and no row has been verified against its source.** It was compiled
-from public knowledge to give the map something real to show. The places are real; recent
-ownership changes and current operating status are where errors will be.
+**This is a seed dataset.** It was compiled from public knowledge to give the map something
+real to show. The places are real; recent ownership changes and current operating status are
+where errors will be.
 
-Every site therefore carries:
+Every site carries:
 
 - a `source_url`,
 - a `confidence` flag — `high`, `medium` or `low`, shown in the interface rather than hidden,
-- a `last_checked` date, blank until you check it.
+- a `last_checked` date, blank until someone checks it.
+
+**59 of the 137 rows have now been checked. 78 have not.** The interface shows which is which,
+so nothing here depends on the reader assuming.
+
+The 49 Strategic Project rows were checked against the Commission's own annex to decision
+C(2025) 1904 — the legal list itself, not the page that links to it, which is what they used to
+cite. All 46 designated EU projects are present and none is invented: 33 matched the annex
+exactly, and the differences were all explainable. Five projects list "rare earth elements for
+magnets" where this dataset keeps light and heavy rare earths apart, which is a deliberate split
+described above. Four name a project or operating company — SOMINCOR, Cobre las Cruces, Keliber
+Technology, Caremag SAS — where the map shows the parent group a reader recognises, and those
+rows now say so in their note. One row was actually wrong: CAREMAG produces boron as well as
+rare earths, and the annex says so.
+
+Checking the annex does not confirm a town or a build status. Several projects had their
+location inferred rather than published, and those keep their lower confidence flag — a legal
+act naming a project is not the same as knowing where the concrete is.
+
+The other ten checked rows are the ones corrected in September 2026 after their operators
+turned out to have been renamed, restarted, suspended or acquired.
 
 The encyclopedia's supply shares, import reliance and recycling rates are **indicative**
 figures of the kind published in the EU's raw materials assessments. They are there for scale,
