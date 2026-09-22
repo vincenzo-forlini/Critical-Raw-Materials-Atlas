@@ -202,8 +202,10 @@ Every site carries:
 - a `confidence` flag — `high`, `medium` or `low`, shown in the interface rather than hidden,
 - a `last_checked` date, blank until someone checks it.
 
-**59 of the 137 rows have now been checked. 78 have not.** The interface shows which is which,
-so nothing here depends on the reader assuming.
+**All 137 rows have now been checked**, and each carries the date it was checked. The
+interface shows those dates, so nothing here depends on the reader assuming. A checked row is
+not a guaranteed row: a date says someone looked, and the confidence flag says how much the
+looking settled.
 
 The 49 Strategic Project rows were checked against the Commission's own annex to decision
 C(2025) 1904 — the legal list itself, not the page that links to it, which is what they used to
@@ -219,8 +221,20 @@ Checking the annex does not confirm a town or a build status. Several projects h
 location inferred rather than published, and those keep their lower confidence flag — a legal
 act naming a project is not the same as knowing where the concrete is.
 
-The other ten checked rows are the ones corrected in September 2026 after their operators
-turned out to have been renamed, restarted, suspended or acquired.
+The remaining 78 rows were checked in September 2026 against operator statements, company
+registers and the trade press. Nine were wrong. Two mines had stopped: the Karviná coking coal
+mines, Czechia's last, ceased mining on 31 January 2026, and Elkem's Salten silicon furnaces
+were all shut from 13 February 2026. Rio Tinto's Jadar project is on hold rather than planned,
+and Atlantic Copper's CirCular recycling plant had opened while the file still called it a
+building site. Two rows were in the wrong town: Neo's rare earth separation works are at
+Sillamäe, not Narva, which is the separate magnet plant, and cylib's commercial plant is at
+Dormagen, not the Aachen pilot line. Yara's Siilinjärvi mine, the EU's only phosphate rock mine,
+halted after a wall collapse in April 2026 with no restart announced. Seven operator records
+also changed hands or changed address, and two company websites in the file no longer resolved.
+
+One row is now deliberately uncertain. Global Tungsten and Powders' Czech company is registered
+"v likvidaci" — in liquidation — and no source establishes whether the Bruntál plant still runs.
+The row stays, flagged low confidence, saying exactly that.
 
 The encyclopedia's supply shares, import reliance and recycling rates are **indicative**
 figures of the kind published in the EU's raw materials assessments. They are there for scale,
