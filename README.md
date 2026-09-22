@@ -98,6 +98,17 @@ The validator resolves every reference, checks the enums and coordinates, and na
 and line of anything wrong. It runs in CI on every push. The app shows the same errors in a
 panel rather than failing silently.
 
+There are unit tests for the parsing and model rules too:
+
+```bash
+node --test
+```
+
+Node’s own runner, so they add no dependency. They cover the things that bite when a CSV is
+edited in a spreadsheet — a changed delimiter, a tick column that stopped matching, a reference
+that no longer resolves — plus the rules that are easy to break by accident, like facet counts
+ignoring their own filter and production shares never being renormalised. CI runs both.
+
 ### Conventions
 
 - **Tick columns** accept `x`, `1`, `true`, `yes` or `sì`. Blank means no.
@@ -287,6 +298,7 @@ js/panels.js          city, company and material panels
 js/periodic.js        periodic table view and its mapping to the EU list
 js/filters.js  js/results.js  js/state.js  js/ui.js  js/icons.js  js/app.js
 scripts/              serve, validate, fetch news, rebuild the basemap
+test/data.test.mjs    parsing and model rules            [node --test, no deps]
 vendor/leaflet/       vendored so the map works offline
 ```
 

@@ -228,11 +228,25 @@ export function toBool(value) {
  * collapsed to single hyphens. `Light Rare Earths` and `light-rare-earths`
  * both become `light-rare-earths`, so column headings can stay readable.
  */
+/**
+ * Letters that carry their mark inside the glyph rather than as a combining
+ * accent. NFD leaves these whole, so the sweep below turned them into hyphens:
+ * Głogów came out as "g-ogow" and Reyðarfjörður as "rey-arfjor-ur". Those still
+ * matched themselves, so nothing was broken — but they would not have matched a
+ * hand-typed "Glogow" in another file, which is a trap worth closing in a
+ * dataset meant to be edited in a spreadsheet.
+ */
+const TRANSLITERATE = {
+  ł: 'l', ø: 'o', æ: 'ae', œ: 'oe', ß: 'ss',
+  ð: 'd', đ: 'd', þ: 'th', ı: 'i', ŀ: 'l',
+};
+
 export function normaliseKey(value) {
   return String(value ?? '')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
+    .replace(/[^a-z0-9]/g, (ch) => TRANSLITERATE[ch] ?? ch)
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }

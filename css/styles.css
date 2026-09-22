@@ -1024,6 +1024,34 @@ button {
   .fbar__reset { order: 3; }
 }
 
+/* Touch targets.
+
+   Everything here is sized for a cursor, which on a finger means 26 to 32px
+   against the 44px that is the usual floor. Raised only where the pointer is
+   genuinely coarse, so a mouse keeps the tighter layout the page was drawn
+   for — a width breakpoint would have caught small laptop windows too. */
+@media (pointer: coarse) {
+  .btn, .btn--sm {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .fpill { min-height: 44px; }
+  .segmented button { min-height: 44px; }
+  .legend__head { min-height: 40px; }
+  .detail__close, .detail__back { min-height: 40px; }
+  /* Option rows in the facet dropdowns: the row is the target, not the box. */
+  .check { min-height: 40px; }
+  /* Leaflet sizes its own buttons inline, so these need the extra weight. */
+  .leaflet-control-zoom a {
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
+    font-size: 20px !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }

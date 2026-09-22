@@ -47,7 +47,7 @@ function facilityDetail(f, elementById) {
     </div>
     <div class="fdetail__co">
       ${companyLogo(f.company, { small: true })}
-      <span class="link" data-act="open-company" data-id="${esc(f.companyKey)}">${esc(f.company.name)}</span>
+      ${companyLink(f.company)}
       ${companyStatusChip(f.company)}
     </div>
     ${f.crmaProject ? `<div class="sub">${crmaChip(f)}</div>` : ''}

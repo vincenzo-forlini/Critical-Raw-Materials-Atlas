@@ -389,11 +389,6 @@ export function flyToCity(city, zoom = 6) {
   map.flyTo([city.lat, city.lon], Math.max(map.getZoom(), zoom), { duration: 0.6 });
 }
 
-export function fitToGroups(groups) {
-  if (!map || !groups?.length) return;
-  const bounds = L.latLngBounds(groups.map((g) => [g.city.lat, g.city.lon]));
-  map.fitBounds(bounds, { padding: [60, 60], maxZoom: 6 });
-}
 
 export function resetView() {
   if (!map) return;

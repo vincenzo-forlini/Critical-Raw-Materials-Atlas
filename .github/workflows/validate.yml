@@ -1,9 +1,9 @@
-name: Validate data
+name: Test and validate
 
 # The CSVs are hand-edited, so check them on every change.
 on:
   push:
-    paths: ['data/**', 'js/**', 'scripts/**', '.github/workflows/validate.yml']
+    paths: ['data/**', 'js/**', 'scripts/**', 'test/**', '.github/workflows/validate.yml']
   pull_request:
   workflow_dispatch:
 
@@ -15,5 +15,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Unit tests
+        run: node --test
+
       - name: Check the CSV database
         run: node scripts/validate-data.mjs

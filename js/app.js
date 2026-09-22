@@ -266,9 +266,8 @@ function popupHtml(group) {
   return `<div class="pop">
     <div class="pop__where">${esc(first.city.name)}, ${esc(first.country)}</div>
     <div class="pop__site">${esc(first.name)}</div>
-    <span class="pop__co link" data-act="open-company" data-id="${esc(first.companyKey)}">${esc(
-      first.company.name
-    )}</span>
+    <button type="button" class="pop__co link link--btn" data-act="open-company"
+            data-id="${esc(first.companyKey)}">${esc(first.company.name)}</button>
     <div class="pop__meta">
       ${companyStatusChip(first.company)}
       ${crmaChip(first)}

@@ -546,12 +546,6 @@ function buildFacilities(csvText, { elementIndex, cityIndex, companyIndex }, rep
       _line: line,
     };
 
-    // A disagreement here usually means a typo in one column or the other.
-    if (r.country && normaliseKey(r.country) !== normaliseKey(city.country)) {
-      report.warn('facilities.csv', line,
-        `${facility.name} says "${r.country}" but ${city.name} is in ${city.country}.`);
-    }
-
     facilities.push(facility);
     byId.set(id, facility);
     company.facilities.push(facility);
