@@ -125,9 +125,8 @@ button {
    thing in its column, and on a phone that was the row of filter pills: the
    page came out about 700px wide on a 375px screen, and its width changed every
    time a pill's label did ("all", "none", a material's name, "2 selected").
-   The phone rescaled the whole page on each change, and the hand-placed filter
-   dropdown went blank. The pills row scrolls sideways on its own; the page
-   must not. */
+   The phone rescaled the whole page on each change. The pills row scrolls
+   sideways on its own; the page must not. */
 .app {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 0;
@@ -329,8 +328,10 @@ button {
    to be `position: fixed; inset: 0` wrapping children that are themselves
    fixed — a nested-fixed sandwich that bought nothing, since every popover is
    positioned by hand anyway, and is a known way to get a browser to lay a box
-   out correctly and then fail to paint what is inside it. A dropdown that opens
-   empty with its border and background intact is exactly that symptom. */
+   out correctly and then fail to paint what is inside it.
+
+   The blank dropdown itself turned out to have a different cause: the box was
+   being scrolled, not left unpainted. See .check and .fpop below. */
 .fpops { position: absolute; top: 0; left: 0; width: 0; height: 0; }
 .fpop {
   position: fixed;
@@ -344,8 +345,13 @@ button {
   box-shadow: var(--shadow);
   /* The list inside is the only thing that scrolls. Letting the popover scroll
      too put a second bar beside the first and slid "Select all" up out of
-     sight, since the actions row sits outside the list. */
+     sight, since the actions row sits outside the list.
+     clip rather than hidden: a hidden box is still a scroll container, and the
+     browser will scroll it to reveal a focused element, which is how this
+     dropdown once went blank. A clipped one cannot be scrolled at all. hidden
+     stays first for browsers that do not know clip. */
   overflow: hidden;
+  overflow: clip;
   display: flex;
   flex-direction: column;
 }
@@ -489,9 +495,20 @@ button {
   border-radius: 6px;
   cursor: pointer;
   user-select: none;
+  /* The row is the containing block for its hidden checkbox. Without this the
+     checkbox was positioned against the whole dropdown, so it stayed put while
+     the list scrolled: tick a row lower down a scrolled list and its checkbox
+     sat hundreds of pixels below the row. Clicking focused it, the browser
+     scrolled the dropdown to bring it into view, and every row and button slid
+     out of sight, leaving an empty box with its border and background. */
+  position: relative;
 }
 .check:hover { background: var(--surface-2); }
-.check input { position: absolute; opacity: 0; pointer-events: none; }
+.check input {
+  position: absolute; left: 0; top: 0;
+  width: 1px; height: 1px; margin: 0;
+  opacity: 0; pointer-events: none;
+}
 
 .check__box {
   flex: none;

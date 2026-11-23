@@ -403,12 +403,29 @@ test('the shipped CSVs build with no errors', () => {
 test('the page column can shrink to a phone screen', () => {
   // A bare 1fr cannot shrink below the widest thing in its column. On a phone
   // that was the row of filter pills, so the page came out about 700px wide on
-  // a 375px screen and changed width with every pill label. The phone rescaled
-  // the page each time and the filter dropdown went blank.
+  // a 375px screen and changed width with every pill label, and the phone
+  // rescaled the whole page each time.
   const css = fs.readFileSync(path.join(ROOT, 'css', 'styles.css'), 'utf8');
   const rules = [...css.matchAll(/\.app(?:\.detail-open)?\s*(?:,[^{]*)?\{[^}]*grid-template-columns:\s*([^;]+);/g)];
   assert.ok(rules.length >= 3, 'expected the three .app column rules');
   for (const [, value] of rules) {
     assert.match(value.trim(), /^minmax\(0,\s*1fr\)/, `.app columns start "${value.trim()}"`);
   }
+});
+
+test('a dropdown cannot be scrolled blank by its hidden checkboxes', () => {
+  // The hidden checkbox in each row used to be positioned against the whole
+  // dropdown, not its row. Ticking a row lower down a scrolled list focused a
+  // checkbox far below it, the browser scrolled the dropdown to show it, and
+  // every row slid out of sight, leaving an empty box.
+  const css = fs.readFileSync(path.join(ROOT, 'css', 'styles.css'), 'utf8');
+  // The body of the rule whose selector is exactly `sel`, comments removed.
+  const block = (sel) => {
+    const start = css.indexOf(`\n${sel} {`);
+    assert.ok(start >= 0, `no ${sel} rule`);
+    const open = css.indexOf('{', start);
+    return css.slice(open + 1, css.indexOf('}', open)).replace(/\/\*[\s\S]*?\*\//g, '');
+  };
+  assert.match(block('.check'), /position:\s*relative/, 'each row must contain its checkbox');
+  assert.match(block('.fpop'), /overflow:\s*clip/, 'the dropdown must clip, not be a scroll container');
 });
