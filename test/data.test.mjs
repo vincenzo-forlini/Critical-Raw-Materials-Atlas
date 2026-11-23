@@ -397,3 +397,18 @@ test('the shipped CSVs build with no errors', () => {
     assert.ok(f.elements.length > 0, `${f.id} has no materials`);
   }
 });
+
+/* --------------------------------------------------------- page layout */
+
+test('the page column can shrink to a phone screen', () => {
+  // A bare 1fr cannot shrink below the widest thing in its column. On a phone
+  // that was the row of filter pills, so the page came out about 700px wide on
+  // a 375px screen and changed width with every pill label. The phone rescaled
+  // the page each time and the filter dropdown went blank.
+  const css = fs.readFileSync(path.join(ROOT, 'css', 'styles.css'), 'utf8');
+  const rules = [...css.matchAll(/\.app(?:\.detail-open)?\s*(?:,[^{]*)?\{[^}]*grid-template-columns:\s*([^;]+);/g)];
+  assert.ok(rules.length >= 3, 'expected the three .app column rules');
+  for (const [, value] of rules) {
+    assert.match(value.trim(), /^minmax\(0,\s*1fr\)/, `.app columns start "${value.trim()}"`);
+  }
+});

@@ -121,14 +121,21 @@ button {
    bar's row as well as the map's, so opening one gains that row's height rather
    than starting below it — a factsheet is a tall thing to read. The bar then
    ends where the panel starts, which is why Reset sits with the pills. */
+/* minmax(0, 1fr), never a bare 1fr. A bare 1fr cannot shrink below the widest
+   thing in its column, and on a phone that was the row of filter pills: the
+   page came out about 700px wide on a 375px screen, and its width changed every
+   time a pill's label did ("all", "none", a material's name, "2 selected").
+   The phone rescaled the whole page on each change, and the hand-placed filter
+   dropdown went blank. The pills row scrolls sideways on its own; the page
+   must not. */
 .app {
   display: grid;
-  grid-template-columns: 1fr 0;
+  grid-template-columns: minmax(0, 1fr) 0;
   grid-template-rows: auto auto 1fr;
   height: 100vh;
   height: 100dvh;
 }
-.app.detail-open { grid-template-columns: 1fr var(--detail-w); }
+.app.detail-open { grid-template-columns: minmax(0, 1fr) var(--detail-w); }
 
 .header { grid-column: 1 / -1; grid-row: 1; }
 .fbar { grid-column: 1; grid-row: 2; }
@@ -1009,7 +1016,7 @@ button {
 
 @media (max-width: 900px) {
   .app,
-  .app.detail-open { grid-template-columns: 1fr; }
+  .app.detail-open { grid-template-columns: minmax(0, 1fr); }
   .fbar, .main { grid-column: 1; }
 
   .main,
