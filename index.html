@@ -7,6 +7,11 @@
 <meta name="description" content="Where critical raw materials are mined, processed, refined, smelted, recycled and recovered across Europe — filterable by material, country and stage of the supply chain.">
 <link rel="canonical" href="https://vincenzo-forlini.github.io/European-critical-network-map/">
 <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+<!-- Saved as an app: the manifest serves Chrome, Edge and Android; iOS reads
+     apple-touch-icon instead. The PNGs are drawn from icon.svg. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="theme-color" content="#131318">
 
 <!-- Link previews. og:image has to be an absolute URL — a relative one is
      ignored by every scraper — so the host is written out here. If this ever
@@ -63,9 +68,11 @@
     <div class="fbar__pills" id="filter-pills"></div>
     <button class="btn btn--sm fbar__reset" id="reset-all">Reset</button>
     <div class="fbar__spacer"></div>
+    <div class="unsited" id="unsited" hidden></div>
   </div>
 
   <div class="fpops" id="filter-pops" hidden></div>
+  <div class="unsited-pop" id="unsited-pop" role="region" aria-label="Strategic Projects not on the map" hidden></div>
 
   <div class="main" id="main">
 

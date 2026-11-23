@@ -33,6 +33,7 @@ const model = buildModel({
   companiesCsv: read('companies.csv'),
   facilitiesCsv: read('facilities.csv'),
   productionCsv: read('production.csv'),
+  unsitedCsv: read('unsited-projects.csv'),
 });
 
 // ANSI colour, skipped when output is piped or NO_COLOR is set.

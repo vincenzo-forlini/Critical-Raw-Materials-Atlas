@@ -771,6 +771,53 @@ button {
 .legend__dot svg { width: 13px; height: 13px; }
 .legend__row[data-off="true"] { opacity: 0.3; }
 
+/* Strategic Projects with no site ---------------------------------------- */
+
+/* A pill at the right-hand end of the filter bar, above the zoom buttons. Gold,
+   like the ★ Project chips, since these are the same kind of thing. */
+.unsited { flex: none; }
+.unsited[hidden] { display: none; }
+.unsited__pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 11px;
+  font: inherit; font-size: 12px; font-weight: 600; color: var(--text);
+  background: rgba(255, 212, 121, 0.06);
+  border: 1px solid rgba(255, 212, 121, 0.36);
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.unsited__pill:hover { background: rgba(255, 212, 121, 0.12); }
+.unsited__star { color: #ffd479; }
+.unsited__chev { width: 14px; height: 14px; color: var(--text-faint); transition: transform 0.15s; }
+.unsited[data-open="true"] .unsited__chev { transform: rotate(180deg); }
+
+/* The list drops down under the pill. Outside the bar, like the facet lists,
+   so the bar's sideways scroll cannot clip it; js/unsited.js places it. */
+.unsited-pop {
+  position: fixed;
+  /* Above Leaflet's controls (z-index 1000): the zoom buttons sit right under
+     the pill and would otherwise show through the list. */
+  z-index: 1100;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 4px 12px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.unsited-pop[hidden] { display: none; }
+.unsited__intro { margin: 8px 0 4px; font-size: 11px; line-height: 1.5; color: var(--text-faint); }
+.unsited__list { list-style: none; margin: 0; padding: 0; }
+.unsited__item { padding: 9px 0; border-top: 1px solid var(--border); }
+.unsited__item:first-child { border-top: none; }
+.unsited__name { font-size: 13px; font-weight: 600; line-height: 1.35; }
+.unsited__meta { margin-top: 2px; font-size: 11px; color: var(--text-dim); }
+.unsited__chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.unsited__why { margin: 6px 0 3px; font-size: 12px; line-height: 1.45; color: var(--text-dim); }
+.unsited__src { font-size: 11px; }
+
 .map-note {
   position: absolute;
   right: 14px; bottom: 14px;
@@ -910,11 +957,6 @@ button {
 
 .srcs { display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
 
-.news__item { padding: 9px 0; border-top: 1px solid var(--border); }
-.news__item:first-child { border-top: none; }
-.news__title { font-size: 13px; line-height: 1.45; display: block; }
-.news__meta { margin-top: 3px; font-size: 11px; color: var(--text-faint); }
-
 .sitelist { display: flex; flex-direction: column; gap: 5px; }
 
 /* ===========================================================================
@@ -1043,6 +1085,11 @@ button {
   }
   .fbar__pills::-webkit-scrollbar { display: none; }
   .fbar__reset { order: 3; }
+  /* The projects-with-no-site pill joins the pills row, after Reset, cut down
+     to the star and the count. Left where it was, it took a row of its own. */
+  .unsited { order: 4; }
+  .unsited__words { display: none; }
+  .unsited__pill { padding: 6px 9px; }
 }
 
 /* Touch targets.
@@ -1194,8 +1241,6 @@ button {
 .stagecount__icon { display: grid; place-items: center; color: var(--stage-c); }
 .stagecount__n { font-weight: 650; font-variant-numeric: tabular-nums; }
 .stagecount__l { color: var(--text-dim); }
-
-.news { margin-top: 2px; }
 
 /* Capital cities: a quiet orientation layer under the site markers. */
 .city-pin { width: 0 !important; height: 0 !important; }

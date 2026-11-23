@@ -139,6 +139,7 @@ function fixture(overrides = {}) {
     // Empty by default: a test that overrides elements.csv would otherwise trip
     // a production row referring to a material it just removed.
     productionCsv: overrides.productionCsv ?? '"element","stage","country","year","value","unit"\n',
+    unsitedCsv: overrides.unsitedCsv,
   });
 }
 
@@ -332,6 +333,48 @@ test('shares over 100 warn rather than being silently rescaled', () => {
   assert.match(m.warnings.map((w) => w.message).join(' '), /over 100/);
 });
 
+/* ------------------------------------------------------ unsited projects */
+
+const UNSITED_HEAD = '"project","company","countries","decision","crma_stage","materials","reason","source_url"\n';
+
+test('an unsited project resolves its materials and keeps its reason', () => {
+  const m = fixture({
+    unsitedCsv: UNSITED_HEAD +
+      '"Ghost Plant","Acme","Sweden|Finland","(EU) 2026/2349","recycling","Lithium|Copper","No site has been announced.","https://example.org"\n',
+  });
+  assert.deepEqual(m.errors, []);
+  assert.equal(m.unsitedProjects.length, 1);
+  const [p] = m.unsitedProjects;
+  assert.deepEqual(p.elements, ['lithium', 'copper']);
+  assert.deepEqual(p.countries, ['Sweden', 'Finland']);
+  assert.deepEqual(p.crmaStage, ['recycling']);
+});
+
+test('a project already on the map cannot also be listed as unsited', () => {
+  const m = fixture({
+    facilitiesCsv: facilitiesCsv(['Lithium'], [
+      { ...SITE, id: 'a', name: 'Mine A', city: 'Kiruna', country: 'Sweden', stage: 'mining',
+        ticks: ['Lithium'], crma_project: 'Ghost Plant', crma_stage: 'extraction' },
+    ]),
+    unsitedCsv: UNSITED_HEAD + '"Ghost Plant","Acme","Sweden","x","extraction","Lithium","No site.",""\n',
+  });
+  assert.equal(m.unsitedProjects.length, 0);
+  assert.match(m.errors.map((e) => e.message).join(' '), /already on the map/);
+});
+
+test('an unsited project needs a reason and real materials', () => {
+  const m = fixture({
+    unsitedCsv: UNSITED_HEAD + '"Ghost Plant","Acme","Sweden","x","recycling","Unobtainium","",""\n',
+  });
+  const msgs = m.errors.map((e) => e.message).join(' ');
+  assert.match(msgs, /no reason/);
+  assert.match(msgs, /not a material/);
+});
+
+test('without the unsited file the list is just empty', () => {
+  assert.deepEqual(fixture().unsitedProjects, []);
+});
+
 /* ------------------------------------------------- the real data, briefly */
 
 test('the shipped CSVs build with no errors', () => {
@@ -341,10 +384,12 @@ test('the shipped CSVs build with no errors', () => {
     companiesCsv: real('companies.csv'),
     facilitiesCsv: real('facilities.csv'),
     productionCsv: real('production.csv'),
+    unsitedCsv: real('unsited-projects.csv'),
   });
   assert.deepEqual(m.errors.map((e) => `${e.file}:${e.line} ${e.message}`), []);
   assert.ok(m.facilities.length > 100, 'the dataset should not have quietly emptied');
   assert.equal(m.elements.length, 34, 'the EU list is 34 materials');
+  assert.equal(m.unsitedProjects.length, 5, 'five designated projects have no published site');
   // Every site resolves to a real city and a real operator.
   for (const f of m.facilities) {
     assert.ok(f.city && Number.isFinite(f.city.lat), `${f.id} has no usable city`);

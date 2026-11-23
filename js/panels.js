@@ -113,7 +113,7 @@ export function cityPanel(model, cityKey, stage, visibleIds) {
 
 /* ----------------------------------------------------------------- company */
 
-export function companyPanel(model, companyKey, news) {
+export function companyPanel(model, companyKey) {
   const company = model.companyByKey.get(companyKey);
   if (!company) return empty('Company not found');
 
@@ -123,8 +123,6 @@ export function companyPanel(model, companyKey, news) {
   const byStage = STAGES.map((s) => ({ stage: s, items: list.filter((f) => f.stage === s) })).filter(
     (g) => g.items.length
   );
-
-  const newsBlock = renderNews(company, news);
 
   return `
     <div class="cohead">
@@ -166,68 +164,7 @@ export function companyPanel(model, companyKey, news) {
           <div class="sitelist">${g.items.map((f) => facilityCard(f, model.elementById)).join('')}</div>
         </div>`
       )
-      .join('')}
-
-    ${newsBlock}`;
-}
-
-function renderNews(company, news) {
-  const entry = news?.companies?.[company.key];
-  const items = entry?.items || [];
-  const searchUrl = `https://news.google.com/search?q=${encodeURIComponent(
-    company.news_query || company.name
-  )}`;
-
-  if (items.length === 0) {
-    // An empty box helps nobody: say why there is nothing, and still offer a way through.
-    return `<h3>Recent announcements</h3>
-      <p class="faint">
-        No feed set for this company. Paste its newsroom RSS address into the
-        <code>news_feed</code> column of <code>data/companies.csv</code> to show
-        its announcements here.
-      </p>
-      <p><a href="${esc(searchUrl)}" target="_blank" rel="noopener noreferrer">Search the news for ${esc(
-        company.name
-      )} &nearr;</a></p>`;
-  }
-
-  const fetched = entry.fetched_at ? `Updated ${relativeDate(entry.fetched_at)}` : '';
-
-  return `<h3>Recent announcements</h3>
-    <div class="news">
-      ${items
-        .map(
-          (i) => `<div class="news__item">
-            <a class="news__title" href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">${esc(
-              i.title
-            )}</a>
-            <div class="news__meta">${esc(i.source || '')}${
-              i.published ? ` &middot; ${esc(formatDate(i.published))}` : ''
-            }</div>
-          </div>`
-        )
-        .join('')}
-    </div>
-    <p class="faint panel-foot">
-      ${esc(fetched)} &middot; from the company's own newsroom feed
-      &middot; <a href="${esc(searchUrl)}" target="_blank" rel="noopener noreferrer">search the news &nearr;</a>
-    </p>`;
-}
-
-function formatDate(iso) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function relativeDate(iso) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
-  if (days <= 0) return 'today';
-  if (days === 1) return 'yesterday';
-  if (days < 30) return `${days} days ago`;
-  return formatDate(iso);
+      .join('')}`;
 }
 
 /* ---------------------------------------------------------------- material */

@@ -386,7 +386,6 @@ function buildCompanies(csvText, report) {
       status_note: r.status_note || '',
       // Filename under assets/logos/. Blank is fine: the panel draws a monogram.
       logo: r.logo || '',
-      news_query: r.news_query || '',
       facilities: [],
       _line: r._line,
     };
@@ -470,7 +469,7 @@ function buildFacilities(csvText, { elementIndex, cityIndex, companyIndex }, rep
     if (!company && r.company) {
       // Not fatal: draw the site, but say the company is undescribed.
       report.warn('facilities.csv', line, `Company "${r.company}" is not listed in companies.csv.`,
-        'The site still appears; add the company to give it a website and news.');
+        'The site still appears; add the company to give it a website and logo.');
       company = {
         key: normaliseKey(r.company),
         name: r.company,
@@ -481,7 +480,6 @@ function buildFacilities(csvText, { elementIndex, cityIndex, companyIndex }, rep
         status: 'active',
         status_note: '',
         logo: '',
-        news_query: '',
         facilities: [],
         _synthesised: true,
       };
@@ -574,6 +572,8 @@ export function buildModel(sources) {
     report
   );
 
+  const unsitedProjects = buildUnsited(sources.unsitedCsv, { elementIndex, facilityIndex }, report);
+
   // Cross-references that only make sense once everything is loaded.
   const usedElements = new Set(facilityIndex.facilities.flatMap((f) => f.elements));
   const usedCities = new Set(facilityIndex.facilities.map((f) => f.cityKey));
@@ -600,6 +600,7 @@ export function buildModel(sources) {
     companyByKey: companyIndex.byKey,
     facilities: facilityIndex.facilities,
     facilityById: facilityIndex.byId,
+    unsitedProjects,
     issues: report.issues,
     errors: report.issues.filter((i) => i.severity === 'error'),
     warnings: report.issues.filter((i) => i.severity === 'warning'),
@@ -612,6 +613,79 @@ export function buildModel(sources) {
       countries: new Set(facilityIndex.facilities.map((f) => f.country)).size,
     },
   };
+}
+
+/* --------------------------------------------------------- unsited projects */
+
+/**
+ * Strategic Projects that are designated but have no published site, so there
+ * is nowhere honest to put a marker. They are listed beside the map instead.
+ * The file is optional: without it the list is simply empty.
+ */
+function buildUnsited(csvText, { elementIndex, facilityIndex }, report) {
+  if (!csvText) return [];
+  const FILE = 'unsited-projects.csv';
+  const { records } = parseCsv(csvText);
+  const onMap = new Set(facilityIndex.facilities.map((f) => normaliseKey(f.crmaProject)).filter(Boolean));
+  const seen = new Set();
+  const out = [];
+
+  for (const r of records) {
+    const line = r._line;
+    const project = r.project || '';
+    if (!project) {
+      report.error(FILE, line, 'Row has no project name.');
+      continue;
+    }
+    const key = normaliseKey(project);
+    if (seen.has(key)) {
+      report.error(FILE, line, `Duplicate project "${project}".`);
+      continue;
+    }
+    seen.add(key);
+    if (onMap.has(key)) {
+      report.error(FILE, line, `"${project}" is already on the map.`,
+        'A site in facilities.csv carries this crma_project. Remove the row here.');
+      continue;
+    }
+    if (!r.company) report.error(FILE, line, `${project} has no company.`);
+    if (!r.reason) {
+      report.error(FILE, line, `${project} gives no reason for being off the map.`,
+        'Say why there is no site. That is the point of the list.');
+    }
+    if (r.source_url && !/^https?:\/\//i.test(r.source_url)) {
+      report.warn(FILE, line, `${project} has a source that is not a URL: "${r.source_url}".`);
+    }
+
+    const crmaStage = splitList(r.crma_stage).map(normaliseKey);
+    const badStage = crmaStage.find((x) => !CRMA_STAGES.includes(x));
+    if (badStage) {
+      report.error(FILE, line, `"${badStage}" is not a CRMA stage for ${project}.`,
+        `Use one or more of: ${CRMA_STAGES.join(', ')}, separated by "|".`);
+    }
+
+    const elements = [];
+    for (const name of splitList(r.materials)) {
+      const el = elementIndex.byKey.get(normaliseKey(name));
+      if (el) elements.push(el.id);
+      else {
+        report.error(FILE, line, `"${name}" is not a material in elements.csv (${project}).`);
+      }
+    }
+
+    out.push({
+      project,
+      company: r.company || '',
+      countries: splitList(r.countries),
+      decision: r.decision || '',
+      crmaStage: crmaStage.filter((x) => CRMA_STAGES.includes(x)),
+      elements,
+      reason: r.reason || '',
+      source_url: r.source_url || '',
+      _line: line,
+    });
+  }
+  return out;
 }
 
 /* --------------------------------------------------------------- filtering */

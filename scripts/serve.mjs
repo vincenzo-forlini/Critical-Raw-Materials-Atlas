@@ -25,6 +25,7 @@ const TYPES = {
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.geojson': 'application/json; charset=utf-8',
   // charset matters: the CSVs carry a BOM and names like Rönnskär.
   '.csv': 'text/csv; charset=utf-8',

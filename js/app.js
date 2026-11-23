@@ -25,11 +25,11 @@ import {
   esc, stageChip, statusChip, elementChips, confidenceBadge, sourceLink, crmaChip,
   companyStatusChip,
 } from './ui.js';
+import { renderUnsited, toggleUnsited, unsitedIsOpen, positionUnsited } from './unsited.js';
 
 const $ = (id) => document.getElementById(id);
 
 let model = null;
-let news = null;
 let productionStage = null; // which stage tab the element chart is showing
 
 /* ------------------------------------------------------------------ loading */
@@ -40,37 +40,27 @@ async function text(url) {
   return res.text();
 }
 
-async function optionalJson(url) {
-  try {
-    const res = await fetch(url, { cache: 'no-cache' });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null; // news is a nice-to-have, never a reason to fail the page
-  }
-}
-
 async function boot() {
   let sources, geo;
   try {
-    [sources, geo, news] = await Promise.all([
+    [sources, geo] = await Promise.all([
       Promise.all([
         text('data/elements.csv'),
         text('data/cities.csv'),
         text('data/companies.csv'),
         text('data/facilities.csv'),
         text('data/production.csv'),
+        text('data/unsited-projects.csv'),
       ]),
       fetch('data/geo/europe.geo.json').then((r) => r.json()),
-      optionalJson('data/news.json'),
     ]);
   } catch (err) {
     fatal(err);
     return;
   }
 
-  const [elementsCsv, citiesCsv, companiesCsv, facilitiesCsv, productionCsv] = sources;
-  model = buildModel({ elementsCsv, citiesCsv, companiesCsv, facilitiesCsv, productionCsv });
+  const [elementsCsv, citiesCsv, companiesCsv, facilitiesCsv, productionCsv, unsitedCsv] = sources;
+  model = buildModel({ elementsCsv, citiesCsv, companiesCsv, facilitiesCsv, productionCsv, unsitedCsv });
 
   showIssues(model.issues);
   showLastUpdated(model.facilities);
@@ -90,6 +80,7 @@ async function boot() {
   renderBasemap(geo);
   renderCities(model.cities);
   renderLegend($('legend'), STAGES);
+  renderUnsited($('unsited'), $('unsited-pop'), model.unsitedProjects, model.elementById);
 
   wireChrome();
   S.subscribe(render);
@@ -154,6 +145,8 @@ function render(state = S.state) {
   $('search-clear').hidden = !state.query;
 
   renderDetail(state);
+  // Opening or closing a factsheet resizes the bar, and so moves the pill.
+  positionUnsited($('unsited'), $('unsited-pop'));
 }
 
 function renderDetail(state = S.state) {
@@ -180,7 +173,7 @@ function renderDetail(state = S.state) {
     const visibleIds = new Set(currentFacilities().map((f) => f.id));
     body.innerHTML = cityPanel(model, id, stage, visibleIds);
   }
-  else if (kind === 'company') body.innerHTML = companyPanel(model, id, news);
+  else if (kind === 'company') body.innerHTML = companyPanel(model, id);
   else if (kind === 'element') {
     // Carbon carries both natural graphite and coking coal, so an id may be a
     // comma-separated list and the panel renders each factsheet in turn.
@@ -318,6 +311,7 @@ function wireChrome() {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (!$('periodic').hidden) { closePeriodic(); return; }
+    if (unsitedIsOpen($('unsited-pop'))) { toggleUnsited($('unsited'), $('unsited-pop'), false); return; }
     // A dropped facet list takes Escape before the detail panel does, since it
     // is the thing most recently opened.
     if (anyFacetOpen()) { closeFacet(); render(S.state); }
@@ -327,6 +321,11 @@ function wireChrome() {
   // list's own contents are excluded, or the click that opened it would also
   // shut it.
   document.addEventListener('pointerdown', (e) => {
+    // The same for the list of projects with no site.
+    if (unsitedIsOpen($('unsited-pop'))
+        && !e.target.closest('#unsited-pop') && !e.target.closest('#unsited')) {
+      toggleUnsited($('unsited'), $('unsited-pop'), false);
+    }
     if (!anyFacetOpen()) return;
     if (e.target.closest('#filter-pops') || e.target.closest('.fpill')) return;
     closeFacet();
@@ -335,11 +334,22 @@ function wireChrome() {
 
   // The popovers are placed by hand under their pill, so they have to be put
   // back when anything moves them.
-  window.addEventListener('resize', () => { if (anyFacetOpen()) render(S.state); });
+  window.addEventListener('resize', () => {
+    if (anyFacetOpen()) render(S.state);
+    positionUnsited($('unsited'), $('unsited-pop'));
+  });
+  // The bar also narrows without a window resize, when a factsheet opens beside
+  // it. The pill at its right-hand end moves then, and its list has to follow.
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => positionUnsited($('unsited'), $('unsited-pop'))).observe($('fbar'));
+  }
   // Whichever element is the sideways scroller: the bar itself on a wide
   // window, the pills alone once the bar wraps onto two rows on a phone.
   for (const el of [$('fbar'), $('filter-pills')]) {
-    el.addEventListener('scroll', () => { if (anyFacetOpen()) render(S.state); });
+    el.addEventListener('scroll', () => {
+      if (anyFacetOpen()) render(S.state);
+      positionUnsited($('unsited'), $('unsited-pop'));
+    });
   }
 
   $('reset-all').addEventListener('click', resetEverything);
@@ -378,6 +388,10 @@ function onDelegatedClick(e) {
     // Toggled straight on the element rather than through state: renderLegend
     // patches which rows are dimmed and never touches data-open, so the choice
     // survives every render without needing to live in the store.
+    case 'unsited-toggle':
+      toggleUnsited($('unsited'), $('unsited-pop'));
+      break;
+
     case 'legend-toggle': {
       const legend = $('legend');
       const open = legend.getAttribute('data-open') !== 'true';
@@ -452,6 +466,7 @@ function resetEverything() {
   closePopup();
   productionStage = null;
   closeFacet();
+  toggleUnsited($('unsited'), $('unsited-pop'), false);
   applyResponsiveSidebar();
   // selectEverything also clears the search, the open panel and the selection,
   // so this ends in the same state as a page load without the reload.
